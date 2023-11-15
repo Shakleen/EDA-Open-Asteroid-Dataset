@@ -1,12 +1,15 @@
 ---
 title: "source"
-author: "Eugene Ayonga, Selegne Tulga, Shakleen Ishfar, KT Wirth"
+author: "Eugene Ayonga, Selenge Tulga, Shakleen Ishfar, KT Wirth"
 date: "2023-11-14"
 output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+library(ggplot2)
+library(dplyr)
 ```
 
 # Loading the dataset
@@ -16,3 +19,136 @@ df <- read.csv("Asteroid_Updated.csv")
 
 sprintf("Dataset has %d rows and %d columns", nrow(df), ncol(df))
 ```
+
+# Mean Inference 7
+
+**Physically hazardous asteroids (PHA) are typically asteroids that are far away from earth.**
+
+PHA (Physically Hazardous Asteroids) are asteroids that are dangerous for earth. In
+the dataset, the column _pha_ signifies whether an asteroid is PHA or not using
+"Y" or "N". Let's see how many _non-null_ values we have for each type.
+
+```{r Reading PHA and non-PHA semi-axis values}
+df_a_pha <- na.omit(df[c("pha", "a")])
+len_is_pha <- length(df_a_pha$a[df_a_pha$pha == "Y"])
+len_not_pha <- length(df_a_pha$a[df_a_pha$pha == "N"])
+
+sprintf("There are %d semi-axis values for PHA", len_is_pha)
+sprintf("There are %d semi-axis values for non-PHA", len_not_pha)
+```
+
+## Dataset Cleaning
+
+Let's look at the 5 number summary of semi-major axis value for each asteroid type.
+
+```{r Five number summary of PHA and non-PHA asteroids}
+print("Five number summary for PHA type asteroids")
+print(fivenum(df_a_pha$a[df_a_pha$pha == "Y"]))
+
+print("Five number summary for non-PHA type asteroids")
+print(fivenum(df_a_pha$a[df_a_pha$pha == "N"]))
+```
+
+The min and max values seem to be quite far from the first and third quartile. This
+means either the data is quite skewed and/or there are lots of outliers. Let's 
+start by filtering out the outliers.
+
+```{r Remove outliers for a on pha}
+get_min_max <- function(values) {
+  q1 <- quantile(values, probs = 0.25, na.rm = T)
+  q3 <- quantile(values, probs = 0.75, na.rm = T)
+  iqr <- q3 - q1
+  span <- 1.5 * iqr
+  min <- q1 - span
+  max <- q3 + span
+  return (c(min, max))
+}
+
+filter_outliers <- function(df) {
+  m <- get_min_max(df$a[df$pha == 'Y'])
+  df <- df[df$pha == 'N' | (df$pha == 'Y' & df$a >= m[1] & df$a <= m[2]),]
+  m <- get_min_max(df$a[df$pha == 'N'])
+  df <- df[df$pha == 'Y' | (df$pha == 'N' & df$a >= m[1] & df$a <= m[2]),]
+  return (df)
+}
+
+df_a_pha <- filter_outliers(df_a_pha)
+
+len_is_pha <- length(df_a_pha$a[df_a_pha$pha == "Y"])
+len_not_pha <- length(df_a_pha$a[df_a_pha$pha == "N"])
+
+print("After filtering outliers")
+sprintf("There are %d semi-axis values for PHA", len_is_pha)
+sprintf("There are %d semi-axis values for non-PHA", len_not_pha)
+```
+
+## Visualization
+
+Let's see how the data is distributed for PHA and non-PHA using a boxplot.
+
+```{r Boxplot of PHA and non-PHA a values}
+ggplot(df_a_pha, aes(x=pha, y=a, fill=pha)) +
+  geom_boxplot() +
+  labs(title = "Side by Side Boxplot",
+       subtitle = "a by pha") +
+  xlab("Physically Hazardous Asteroid (pha)") +
+  ylab("Semi-major Axis Value (a)") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+```{r Histogram distribution of PHA and non-PHA a values}
+ggplot(df_a_pha, aes(x=a, fill=pha)) +
+  geom_histogram(aes(y=..density..), position="stack") +
+  labs(title = "Histogram", subtitle = "Distribution of Semi-major Axis Values") +
+  xlab("Semi-major Axis Value (a)") +
+  ylab("Distribution Density") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+Let's check the distribution of the populations against a normal distribution.
+
+```{r}
+ggplot(df_a_pha, aes(sample=a, color=pha)) +
+  stat_qq() + 
+  stat_qq_line() +
+  labs(title = "Quantile-Quantile plot", 
+       subtitle = "Distribution of Semi-major Axis Values") +
+  xlab("Normal distribution") +
+  ylab("Semi-major Axis value") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+## Hypothesis testing
+
+After filtering out sample has more than 30 examples, meaning we can assume that
+the normality condition holds according to CLT. We have two populations, which are
+asteroids that are PHA and non-PHA. We do not know the population variance for each
+population and can't assume that they are equal. So, it makes sense to do a **Welch test.** 
+Asteroids that are closer to earth will have a smaller semi-major axis while
+asteroids that are further away will have a higher semi-major axis. Essentially,
+we are testing to see if PHA type asteroids have a larger semi-major axis than
+non-PHA type asteroids. Mathematically, our hypothesis are as follow:
+
+* $\mathbf{H_0}: \mu_y \le \mu_n$
+* $\mathbf{H_1}: \mu_y > \mu_n$
+
+Out level of significance is $\alpha = 0.01$.
+
+where $\mu_y$ and $\mu_n$ are mean semi-major axis value for PHA and non-PHA type
+asteroids.
+
+```{r Welch test for a on pha}
+a_ypha <- df_a_pha$a[df_a_pha$pha == 'Y']
+a_npha <- df_a_pha$a[df_a_pha$pha == 'N']
+t.test(x=a_ypha, y=a_npha, alternative="greater",
+       paired=F, var.equal=F, conf.level=0.01)
+```
+
+We can see that the p-value is 1. Which is way higher than our significance level.
+This means we don't have sufficient evidence to reject the null hypothesis. Interestingly,
+asteroids that are non-PHA have a very probability of having larger semi-major axis
+values. This means that **Physically hazardous asteroids are typically closer to earth.**
+

@@ -1,2 +1,5 @@
 **/venv
 **/Asteroid_Updated.csv
+**/*.pdf
+**/*.Rhistory
+**/*.RData
