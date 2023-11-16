@@ -107,19 +107,20 @@ ggplot(df_a_pha, aes(x=a, fill=pha)) +
         plot.subtitle = element_text(hjust = 0.5))
 ```
 
-Let's check the distribution of the populations against a normal distribution.
+<!-- TODO : Fix this to render PDF -->
+<!-- Let's check the distribution of the populations against a normal distribution. -->
 
-```{r}
-ggplot(df_a_pha, aes(sample=a, color=pha)) +
-  stat_qq() + 
-  stat_qq_line() +
-  labs(title = "Quantile-Quantile plot", 
-       subtitle = "Distribution of Semi-major Axis Values") +
-  xlab("Normal distribution") +
-  ylab("Semi-major Axis value") +
-  theme(plot.title = element_text(hjust = 0.5),
-        plot.subtitle = element_text(hjust = 0.5))
-```
+<!-- ```{r Q-Q plot to compare against normal distribution} -->
+<!-- ggplot(df_a_pha, aes(sample=a, color=pha)) + -->
+<!--   stat_qq() +  -->
+<!--   stat_qq_line() + -->
+<!--   labs(title = "Quantile-Quantile plot",  -->
+<!--        subtitle = "Distribution of Semi-major Axis Values") + -->
+<!--   xlab("Normal distribution") + -->
+<!--   ylab("Semi-major Axis value") + -->
+<!--   theme(plot.title = element_text(hjust = 0.5), -->
+<!--         plot.subtitle = element_text(hjust = 0.5)) -->
+<!-- ``` -->
 
 ## Hypothesis testing
 
@@ -152,3 +153,82 @@ This means we don't have sufficient evidence to reject the null hypothesis. Inte
 asteroids that are non-PHA have a very probability of having larger semi-major axis
 values. This means that **Physically hazardous asteroids are typically closer to earth.**
 
+# Mean Inference 8
+
+**We are more confident about an asteroid's orbital path, the more times we observe it.**
+
+The **condition_code** column stands for orbital condition code. It is also known
+as the **U Uncertainty Parameter**. Values range from 0 to 9 on the logarithmic scale 
+indicating how well an object's orbit is known.  A value of 0 indicates a well-determined 
+orbit, while a value of 9 indicates that there are insufficient observations for 
+long-term orbit prediction.
+
+The column **n_obs_used** signifies the number of observations used for a particular
+asteroid.
+
+```{r Creating view with orbital condition code and observation counts}
+df_cc_oc <- na.omit(df[c("condition_code", "n_obs_used")])
+```
+
+## Data Cleaning
+
+```{r Unique observation counts}
+print("Unique condition codes")
+print(unique(df_cc_oc$condition_code))
+```
+
+Interestingly, there are more than 10 values in condition code column. After searching
+online extensively, we were unable to find any information on  these orbits. Hence, 
+we come to the conclusion that these are mislabeled. Since they are a very small 
+fraction of the total sample size, we can safely remove them. While we're at it, 
+let's remove the instances that don't have a condition code at all.
+
+```{r Cleaning erroneous condition code}
+df_cc_oc <- filter(df_cc_oc, condition_code != '')
+df_cc_oc <- filter(df_cc_oc, condition_code != 'D')
+df_cc_oc <- filter(df_cc_oc, condition_code != 'E')
+sprintf("Sample count after filtering: %d", nrow(df_cc_oc))
+```
+Let's now observe the number of samples in each of the condition codes in a bar
+chart:
+
+```{r Barchart showing the distribution of condition codes}
+ggplot(df_cc_oc, aes(x=condition_code, fill=condition_code)) +
+  geom_bar() +
+  labs(title = "Bar Chart", subtitle = "Condition code distribution") +
+  xlab("Condition Code") +
+  ylab("Count") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+Let's clean the dataset by removing the outliers.
+
+```{r Discarding outliers from condition code}
+for (a in unique(df_cc_oc$condition_code)) {
+  m <- get_min_max(df_cc_oc$n_obs_used[df_cc_oc$condition_code == a])
+  cond <- (df_cc_oc$n_obs_used >= m[1]) & (df_cc_oc$n_obs_used <= m[2])
+  df_cc_oc <- df_cc_oc[df_cc_oc$condition_code != a | cond,]
+}
+```
+
+We can now check the distribution of each condition code's observation counts.
+
+```{r Boxplot showing the distribution of observations per condition codes}
+ggplot(df_cc_oc, aes(x=condition_code, y=n_obs_used, fill=condition_code)) +
+  geom_boxplot() +
+  labs(title = "Side by Side Boxplot",
+       subtitle = "Observations by Condition code") +
+  xlab("Condition code") +
+  ylab("Observations") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+Visually, the lower the condition code, the more observations we have for the
+asteroid type.
+
+## Hypothesis test
+
+We want to see if there are less observations for an increase in the value of
+condition code. Meaning, if they are negatively correlated. 
