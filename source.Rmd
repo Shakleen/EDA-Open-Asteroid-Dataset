@@ -6,10 +6,14 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(dev = "png",
+                      dpi = 300,
+                      echo = FALSE,
+                      cache = TRUE)
 
 library(ggplot2)
 library(dplyr)
+library(MASS)
 ```
 
 # Loading the dataset
@@ -24,22 +28,32 @@ sprintf("Dataset has %d rows and %d columns", nrow(df), ncol(df))
 
 **Physically hazardous asteroids (PHA) are typically asteroids that are far away from earth.**
 
-PHA (Physically Hazardous Asteroids) are asteroids that are dangerous for earth. In
-the dataset, the column _pha_ signifies whether an asteroid is PHA or not using
-"Y" or "N". Let's see how many _non-null_ values we have for each type.
-
 ```{r Reading PHA and non-PHA semi-axis values}
 df_a_pha <- na.omit(df[c("pha", "a")])
-len_is_pha <- length(df_a_pha$a[df_a_pha$pha == "Y"])
-len_not_pha <- length(df_a_pha$a[df_a_pha$pha == "N"])
 
-sprintf("There are %d semi-axis values for PHA", len_is_pha)
-sprintf("There are %d semi-axis values for non-PHA", len_not_pha)
+print("Unique PHA types")
+unique(df_a_pha$pha)
 ```
 
-## Dataset Cleaning
+PHA (Physically Hazardous Asteroids) are asteroids that are dangerous for earth. In
+the dataset, the column _pha_ signifies whether an asteroid is PHA or not using
+"Y" or "N". Let's see how many _non-null_ values we have for each type. 
 
-Let's look at the 5 number summary of semi-major axis value for each asteroid type.
+```{r Bar chart showing the number of examples of each pha type asteroid}
+ggplot(df_a_pha, aes(x=pha, fill=pha)) +
+  geom_bar() +
+  labs(title = "Bar Chart", subtitle = "PHA distribution") +
+  xlab("Physically Hazardous Asteroid (PHA)") +
+  ylab("Count") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+The column __a__ signifies the semi-major axis of an asteroid. The [semi-major axis](https://science.nasa.gov/resource/orbits-and-keplers-laws/) of an asteroid 
+is the average orbital distance from the Sun. It is half of the major axis, which 
+is the total distance between the closest and farthest points of the asteroid’s 
+orbit, also known as the perihelion and aphelion. Let's look at the 5 number summary 
+of semi-major axis value for each asteroid type.
 
 ```{r Five number summary of PHA and non-PHA asteroids}
 print("Five number summary for PHA type asteroids")
@@ -49,9 +63,19 @@ print("Five number summary for non-PHA type asteroids")
 print(fivenum(df_a_pha$a[df_a_pha$pha == "N"]))
 ```
 
-The min and max values seem to be quite far from the first and third quartile. This
-means either the data is quite skewed and/or there are lots of outliers. Let's 
-start by filtering out the outliers.
+## Dataset Cleaning
+
+There are some samples in the dataset where __pha__ is empty. Let's remove those
+samples.
+
+```{r Remove samples with empty pha value}
+df_a_pha <- filter(df_a_pha, pha != '')
+
+print("Unique PHA types")
+unique(df_a_pha$pha)
+```
+
+Next, we detect and remove the outliers from the samples.
 
 ```{r Remove outliers for a on pha}
 get_min_max <- function(values) {
@@ -64,25 +88,18 @@ get_min_max <- function(values) {
   return (c(min, max))
 }
 
-filter_outliers <- function(df) {
-  m <- get_min_max(df$a[df$pha == 'Y'])
-  df <- df[df$pha == 'N' | (df$pha == 'Y' & df$a >= m[1] & df$a <= m[2]),]
-  m <- get_min_max(df$a[df$pha == 'N'])
-  df <- df[df$pha == 'Y' | (df$pha == 'N' & df$a >= m[1] & df$a <= m[2]),]
-  return (df)
+for (cat in c('Y', 'N')) {
+  m <- get_min_max(df_a_pha$a[df_a_pha$pha == cat])
+  df_a_pha <- filter(df_a_pha, (pha == cat & a >= m[1] & a <= m[2] |
+                                pha != cat))
 }
 
-df_a_pha <- filter_outliers(df_a_pha)
-
-len_is_pha <- length(df_a_pha$a[df_a_pha$pha == "Y"])
-len_not_pha <- length(df_a_pha$a[df_a_pha$pha == "N"])
-
 print("After filtering outliers")
-sprintf("There are %d semi-axis values for PHA", len_is_pha)
-sprintf("There are %d semi-axis values for non-PHA", len_not_pha)
+sprintf("There are %d semi-axis values for PHA", 
+        length(df_a_pha$a[df_a_pha$pha == "Y"]))
+sprintf("There are %d semi-axis values for non-PHA", 
+        length(df_a_pha$a[df_a_pha$pha == "N"]))
 ```
-
-## Visualization
 
 Let's see how the data is distributed for PHA and non-PHA using a boxplot.
 
@@ -97,30 +114,33 @@ ggplot(df_a_pha, aes(x=pha, y=a, fill=pha)) +
         plot.subtitle = element_text(hjust = 0.5))
 ```
 
+Let's see the distribution of values of different __pha__ asteroid types.
+
 ```{r Histogram distribution of PHA and non-PHA a values}
 ggplot(df_a_pha, aes(x=a, fill=pha)) +
-  geom_histogram(aes(y=..density..), position="stack") +
-  labs(title = "Histogram", subtitle = "Distribution of Semi-major Axis Values") +
+  geom_histogram(aes(y=after_stat(density)), position="stack", 
+                 bins = ceiling(log(length(df_a_pha$a[df_a_pha$pha == "N"]))) + 1) +
+  labs(title = "Stacked Histogram", 
+       subtitle = "Distribution of Semi-major Axis Values") +
   xlab("Semi-major Axis Value (a)") +
   ylab("Distribution Density") +
   theme(plot.title = element_text(hjust = 0.5),
         plot.subtitle = element_text(hjust = 0.5))
 ```
 
-<!-- TODO : Fix this to render PDF -->
-<!-- Let's check the distribution of the populations against a normal distribution. -->
+Let's check the distribution of the populations against a normal distribution.
 
-<!-- ```{r Q-Q plot to compare against normal distribution} -->
-<!-- ggplot(df_a_pha, aes(sample=a, color=pha)) + -->
-<!--   stat_qq() +  -->
-<!--   stat_qq_line() + -->
-<!--   labs(title = "Quantile-Quantile plot",  -->
-<!--        subtitle = "Distribution of Semi-major Axis Values") + -->
-<!--   xlab("Normal distribution") + -->
-<!--   ylab("Semi-major Axis value") + -->
-<!--   theme(plot.title = element_text(hjust = 0.5), -->
-<!--         plot.subtitle = element_text(hjust = 0.5)) -->
-<!-- ``` -->
+```{r Q-Q plot to compare against normal distribution}
+ggplot(df_a_pha, aes(sample=a, color=pha)) +
+  stat_qq() +
+  stat_qq_line() +
+  labs(title = "Quantile-Quantile plot",
+       subtitle = "Distribution of Semi-major Axis Values") +
+  xlab("Normal distribution") +
+  ylab("Semi-major Axis value") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
 
 ## Hypothesis testing
 
@@ -145,7 +165,7 @@ asteroids.
 a_ypha <- df_a_pha$a[df_a_pha$pha == 'Y']
 a_npha <- df_a_pha$a[df_a_pha$pha == 'N']
 t.test(x=a_ypha, y=a_npha, alternative="greater",
-       paired=F, var.equal=F, conf.level=0.01)
+       paired=F, var.equal=F, conf.level=1-0.01)
 ```
 
 We can see that the p-value is 1. Which is way higher than our significance level.
@@ -153,7 +173,7 @@ This means we don't have sufficient evidence to reject the null hypothesis. Inte
 asteroids that are non-PHA have a very probability of having larger semi-major axis
 values. This means that **Physically hazardous asteroids are typically closer to earth.**
 
-# Mean Inference 8
+# Correlation Inference
 
 **We are more confident about an asteroid's orbital path, the more times we observe it.**
 
@@ -230,5 +250,4 @@ asteroid type.
 
 ## Hypothesis test
 
-We want to see if there are less observations for an increase in the value of
-condition code. Meaning, if they are negatively correlated. 
+<!-- TODO: Figure out a way to do the hypothesis  -->

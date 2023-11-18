@@ -3,3 +3,5 @@
 **/*.pdf
 **/*.Rhistory
 **/*.RData
+**/source_files
+**/source_cache
