@@ -5,3 +5,4 @@
 **/*.RData
 **/source_files
 **/source_cache
+**/source.aux
