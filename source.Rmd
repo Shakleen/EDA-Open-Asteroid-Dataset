@@ -28,7 +28,7 @@ sprintf("Dataset has %d rows and %d columns", nrow(df), ncol(df))
 
 **Physically hazardous asteroids (PHA) are typically asteroids that are far away from earth.**
 
-```{r Reading PHA and non-PHA semi-axis values}
+```{r Mean_Inference_7 Reading PHA and non-PHA semi-axis values}
 df_a_pha <- na.omit(df[c("pha", "a")])
 
 print("Unique PHA types")
@@ -39,7 +39,7 @@ PHA (Physically Hazardous Asteroids) are asteroids that are dangerous for earth.
 the dataset, the column _pha_ signifies whether an asteroid is PHA or not using
 "Y" or "N". Let's see how many _non-null_ values we have for each type. 
 
-```{r Bar chart showing the number of examples of each pha type asteroid}
+```{r Mean_Inference_7 Bar chart showing the number of examples of each pha type asteroid}
 ggplot(df_a_pha, aes(x=pha, fill=pha)) +
   geom_bar() +
   labs(title = "Bar Chart", subtitle = "PHA distribution") +
@@ -55,7 +55,7 @@ is the total distance between the closest and farthest points of the asteroid’
 orbit, also known as the perihelion and aphelion. Let's look at the 5 number summary 
 of semi-major axis value for each asteroid type.
 
-```{r Five number summary of PHA and non-PHA asteroids}
+```{r Mean_Inference_7 Five number summary of PHA and non-PHA asteroids}
 print("Five number summary for PHA type asteroids")
 print(fivenum(df_a_pha$a[df_a_pha$pha == "Y"]))
 
@@ -68,7 +68,7 @@ print(fivenum(df_a_pha$a[df_a_pha$pha == "N"]))
 There are some samples in the dataset where __pha__ is empty. Let's remove those
 samples.
 
-```{r Remove samples with empty pha value}
+```{r Mean_Inference_7 Remove samples with empty pha value}
 df_a_pha <- filter(df_a_pha, pha != '')
 
 print("Unique PHA types")
@@ -77,7 +77,7 @@ unique(df_a_pha$pha)
 
 Next, we detect and remove the outliers from the samples.
 
-```{r Remove outliers for a on pha}
+```{r Mean_Inference_7 Remove outliers for a on pha}
 get_min_max <- function(values) {
   q1 <- quantile(values, probs = 0.25, na.rm = T)
   q3 <- quantile(values, probs = 0.75, na.rm = T)
@@ -103,7 +103,7 @@ sprintf("There are %d semi-axis values for non-PHA",
 
 Let's see how the data is distributed for PHA and non-PHA using a boxplot.
 
-```{r Boxplot of PHA and non-PHA a values}
+```{r Mean_Inference_7 Boxplot of PHA and non-PHA a values}
 ggplot(df_a_pha, aes(x=pha, y=a, fill=pha)) +
   geom_boxplot() +
   labs(title = "Side by Side Boxplot",
@@ -116,7 +116,7 @@ ggplot(df_a_pha, aes(x=pha, y=a, fill=pha)) +
 
 Let's see the distribution of values of different __pha__ asteroid types.
 
-```{r Histogram distribution of PHA and non-PHA a values}
+```{r Mean_Inference_7 Histogram distribution of PHA and non-PHA a values}
 ggplot(df_a_pha, aes(x=a, fill=pha)) +
   geom_histogram(aes(y=after_stat(density)), position="stack", 
                  bins = ceiling(log(length(df_a_pha$a[df_a_pha$pha == "N"]))) + 1) +
@@ -130,7 +130,7 @@ ggplot(df_a_pha, aes(x=a, fill=pha)) +
 
 Let's check the distribution of the populations against a normal distribution.
 
-```{r Q-Q plot to compare against normal distribution}
+```{r Mean_Inference_7 Q-Q plot to compare against normal distribution}
 ggplot(df_a_pha, aes(sample=a, color=pha)) +
   stat_qq() +
   stat_qq_line() +
@@ -161,7 +161,7 @@ Out level of significance is $\alpha = 0.01$.
 where $\mu_y$ and $\mu_n$ are mean semi-major axis value for PHA and non-PHA type
 asteroids.
 
-```{r Welch test for a on pha}
+```{r Mean_Inference_7 Welch test}
 a_ypha <- df_a_pha$a[df_a_pha$pha == 'Y']
 a_npha <- df_a_pha$a[df_a_pha$pha == 'N']
 t.test(x=a_ypha, y=a_npha, alternative="greater",
@@ -186,13 +186,13 @@ long-term orbit prediction.
 The column **n_obs_used** signifies the number of observations used for a particular
 asteroid.
 
-```{r Creating view with orbital condition code and observation counts}
+```{r Correlation_Inference_1 Creating view with orbital condition code and observation counts}
 df_cc_oc <- na.omit(df[c("condition_code", "n_obs_used")])
 ```
 
 ## Data Cleaning
 
-```{r Unique observation counts}
+```{r Correlation_Inference_1 Unique observation counts}
 print("Unique condition codes")
 print(unique(df_cc_oc$condition_code))
 ```
@@ -203,7 +203,7 @@ we come to the conclusion that these are mislabeled. Since they are a very small
 fraction of the total sample size, we can safely remove them. While we're at it, 
 let's remove the instances that don't have a condition code at all.
 
-```{r Cleaning erroneous condition code}
+```{r Correlation_Inference_1 Cleaning erroneous condition code}
 df_cc_oc <- filter(df_cc_oc, condition_code != '')
 df_cc_oc <- filter(df_cc_oc, condition_code != 'D')
 df_cc_oc <- filter(df_cc_oc, condition_code != 'E')
@@ -212,7 +212,7 @@ sprintf("Sample count after filtering: %d", nrow(df_cc_oc))
 Let's now observe the number of samples in each of the condition codes in a bar
 chart:
 
-```{r Barchart showing the distribution of condition codes}
+```{r Correlation_Inference_1 Barchart showing the distribution of condition codes}
 ggplot(df_cc_oc, aes(x=condition_code, fill=condition_code)) +
   geom_bar() +
   labs(title = "Bar Chart", subtitle = "Condition code distribution") +
@@ -224,7 +224,7 @@ ggplot(df_cc_oc, aes(x=condition_code, fill=condition_code)) +
 
 Let's clean the dataset by removing the outliers.
 
-```{r Discarding outliers from condition code}
+```{r Correlation_Inference_1 Discarding outliers from condition code}
 for (a in unique(df_cc_oc$condition_code)) {
   m <- get_min_max(df_cc_oc$n_obs_used[df_cc_oc$condition_code == a])
   cond <- (df_cc_oc$n_obs_used >= m[1]) & (df_cc_oc$n_obs_used <= m[2])
@@ -234,7 +234,7 @@ for (a in unique(df_cc_oc$condition_code)) {
 
 We can now check the distribution of each condition code's observation counts.
 
-```{r Boxplot showing the distribution of observations per condition codes}
+```{r Correlation_Inference_1 Boxplot showing the distribution of observations per condition codes}
 ggplot(df_cc_oc, aes(x=condition_code, y=n_obs_used, fill=condition_code)) +
   geom_boxplot() +
   labs(title = "Side by Side Boxplot",
@@ -251,3 +251,148 @@ asteroid type.
 ## Hypothesis test
 
 <!-- TODO: Figure out a way to do the hypothesis  -->
+
+# Mean Inference 9
+
+**NEOs on average have a lower orbital periods than non-NEOs.**
+
+```{r Mean_Inference_9 Create temporary dataframe}
+df_neo_per <- na.omit(df[c("neo", "per_y")])
+sprintf("Number of examples: %d", nrow(df_neo_per))
+```
+
+NEO stands for Near Earth Object. Asteroids that are close to earth are classified 
+as NEO asteroids. In the dataset, the column **neo** has values 'Y' and 'N' for asteroids
+that are NEO and not NEO respectively. Let's see how many of each type we have in 
+our sample
+
+```{r Mean_Inference_9 Count for NEO and non-NEO asteroids}
+df_neo_per %>% group_by(neo) %>% summarise(count = n())
+```
+
+The [orbital period](https://en.wikipedia.org/wiki/Orbital_period) of an asteroid 
+is the amount of time it takes for the asteroid to complete one orbit around the Sun.
+The column **per_y** holds the value for orbital periods of each asteroid.
+
+## Data Cleaning
+
+There seems to be 5 samples where the NEO status is blank. Let's remove them.
+
+```{r Mean_Inference_9 Removing blank NEO status samples}
+df_neo_per <- filter(df_neo_per, neo != '')
+sprintf("Number of examples: %d", nrow(df_neo_per))
+
+```
+
+Now, let's remove outlier values for orbital period for NEO and non-NEO asteroids.
+
+```{r Mean_Inference_9 Removing outliers}
+for (a in unique(df_neo_per$neo)) {
+  m <- get_min_max(df_neo_per$per_y[df_neo_per$neo == a])
+  cond <- (df_neo_per$per_y >= m[1]) & (df_neo_per$per_y <= m[2])
+  df_neo_per <- df_neo_per[df_neo_per$neo != a | cond,]
+}
+
+df_neo_per %>% group_by(neo) %>% summarise(count = n())
+```
+
+We can now check the distribution of orbital periods for NEO and non-NEO objects 
+in our sample set.
+
+```{r Mean_Inference_9 Histogram distribution of NEO and non-NEO period values}
+ggplot(df_neo_per, aes(x=per_y, fill=neo)) +
+  geom_histogram(aes(y=after_stat(density)), position="stack", 
+                 bins = ceiling(log(length(df_a_pha$a[df_a_pha$pha == "N"]))) + 1) +
+  labs(title = "Stacked Histogram", 
+       subtitle = "Distribution of Orbital Periods") +
+  xlab("Orbital Period (per_y)") +
+  ylab("Distribution Density") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+From the histogram we can observe that the distribution of orbital period for non-NEO
+asteroids are on average higher than NEO asteroids. Let's take a look at a boxplot to
+get a better look.
+
+```{r Mean_Inference_9 Boxplot showing the distribution of orbital periods}
+ggplot(df_neo_per, aes(x=neo, y=per_y, fill=neo)) +
+  geom_boxplot() +
+  labs(title = "Side by Side Boxplot",
+       subtitle = "Orbital Period by NEO") +
+  xlab("Near Earth Object") +
+  ylab("Orbital Period") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+So visually our hypothesis of NEO asteroids having on average a lower orbital period
+seems to hold. But let's perform a hypothesis test to see if that's really the case.
+
+## Hypothesis Test
+
+Formally let our hypothesis be the following
+
+* $\mathbf{H_0}: \mu_{neo} > \mu_{not} = \mu_{neo} - \mu_{not} \ge 0$
+Meaning, the average orbital period of NEO asteroids are greater than or equal
+to the average orbital period of non-NEO asteroids.
+
+* $\mathbf{H_1}: \mu_{neo} \le \mu_{not} = \mu_{neo} - \mu_{not} < 0$
+Meaning, the average orbital period of NEO asteroids are less than the average 
+orbital period of non-NEO asteroids.
+
+and our significance level $\alpha = 0.01$.
+
+We have 2 populations where we don't know the population variance of either and we
+can't assume the variances are equal. So, we'll be doing a Welch test.
+
+```{r Mean_Inference_9 Welch test}
+t.test(x = df_neo_per$per_y[df_neo_per$neo == 'Y'],
+       y = df_neo_per$per_y[df_neo_per$neo == 'N'],
+       alternative = "less", paired = F,
+       var.equal = F, conf.level = 1 - 0.01)
+```
+
+The p-value is much smaller than our significance level. Thus, we have sufficient
+evidence to conclude that the average orbital period of NEO asteroids are less than
+the average orbital period of non-NEO asteroids.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
