@@ -357,7 +357,27 @@ The p-value is much smaller than our significance level. Thus, we have sufficien
 evidence to conclude that the average orbital period of NEO asteroids are less than
 the average orbital period of non-NEO asteroids.
 
+# Mean Inference 5
 
+```{r}
+df_name_conditioncode<- na.omit(df[c("name", "condition_code")])
+
+print("Unique Name types")
+unique(df_name_conditioncode$name)
+```
+```{r}
+ggplot(df_name_conditioncode, aes(x=condition_code, fill=condition_code)) +
+  geom_bar() +
+  labs(title = "Bar Chart", subtitle = "Condition code distribution") +
+  xlab("Condition code of asteroids") +
+  ylab("Count") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+```{r}
+
+```
 
 
 
