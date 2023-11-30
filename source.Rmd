@@ -360,10 +360,10 @@ the average orbital period of non-NEO asteroids.
 # Mean Inference 5
 
 ```{r}
+library(plyr)
 df_name_conditioncode<- na.omit(df[c("name", "condition_code")])
 
-print("Unique Name types")
-unique(df_name_conditioncode$name)
+nrow(unique(df_name_conditioncode$name))
 ```
 ```{r}
 ggplot(df_name_conditioncode, aes(x=condition_code, fill=condition_code)) +
@@ -376,11 +376,33 @@ ggplot(df_name_conditioncode, aes(x=condition_code, fill=condition_code)) +
 ```
 
 ```{r}
-
+#Data Cleaning
+df_name_conditioncode <- filter(df_name_conditioncode, condition_code != '')
+df_name_conditioncode <- filter(df_name_conditioncode, condition_code != 'D')
+df_name_conditioncode <- filter(df_name_conditioncode, condition_code != 'E')
+df_name_conditioncode <- filter(df_name_conditioncode, name != '')
+dim(df_name_conditioncode)
+sprintf("Sample count after filtering: %d", nrow(df_name_conditioncode))
 ```
 
+```{r}
+unique(df_name_conditioncode$condition_code)
+head(df_name_conditioncode)
+```
 
+```{r}
+ggplot(df_name_conditioncode, aes(x=condition_code, fill=condition_code)) +
+  geom_bar() +
+  labs(title = "Bar Chart", subtitle = "Condition code distribution") +
+  xlab("Condition Code") +
+  ylab("Count") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
 
+```{r}
+
+```
 
 
 
