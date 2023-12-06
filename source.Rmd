@@ -408,9 +408,63 @@ count(df_name_conditioncode$condition_code)
 ```
 From these table: If a steroid's orbital number is 0, it has a name.
 
+# Mean Inference 6
+
+Orbital paths of NEOs are better known than non-NEOs. 
+```{r}
+
+df_conditioncode_neo<- na.omit(df[c("neo", "condition_code")])
+
+nrow(df_conditioncode_neo)
+```
+```{r}
+df_conditioncode_neo <- filter(df_conditioncode_neo, condition_code != '')
+df_conditioncode_neo <- filter(df_conditioncode_neo, condition_code != 'D')
+df_conditioncode_neo <- filter(df_conditioncode_neo, condition_code != 'E')
+df_conditioncode_neo <- filter(df_conditioncode_neo, neo != '')
+dim(df_conditioncode_neo)
+sprintf("Sample count after filtering: %d", nrow(df_conditioncode_neo))
+```
+
+```{r}
+ggplot(df_conditioncode_neo, aes(x=condition_code, fill=condition_code)) +
+  geom_bar() +
+  labs(title = "Bar Chart", subtitle = "Condition code distribution") +
+  xlab("Condition code of asteroids") +
+  ylab("Count") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+```{r}
+ggplot(df_conditioncode_neo, aes(x=neo, fill=neo)) +
+  geom_bar() +
+  labs(title = "Bar Chart", subtitle = "Condition code distribution") +
+  xlab("Condition code of asteroids") +
+  ylab("Count") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+#Variance 5
+
+Non-NEOs have a higher variance in moid than NEOs. (neo, moid)
+
+```{r}
+df_neo_moid_var <- na.omit(df[c("neo", "moid")])
+df_neo_moid_var <- filter(df_neo_moid_var, neo != '')
+dim(df_neo_moid_var)
+# Perform the F-test
+f_test_result <- var.test(moid ~ neo, data = df_neo_moid_var, alpha = 0.01)
+
+# Print the result
+print(f_test_result)
+
+```
 
 
+```{r}
 
+```
 
 
 
