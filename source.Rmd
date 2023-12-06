@@ -118,9 +118,9 @@ Let's see the distribution of values of different __pha__ asteroid types.
 
 ```{r Mean_Inference_7 Histogram distribution of PHA and non-PHA a values}
 ggplot(df_a_pha, aes(x=a, fill=pha)) +
-  geom_histogram(aes(y=after_stat(density)), position="stack", 
+  geom_histogram(aes(y=after_stat(density)), position="dodge", 
                  bins = ceiling(log(length(df_a_pha$a[df_a_pha$pha == "N"]))) + 1) +
-  labs(title = "Stacked Histogram", 
+  labs(title = "Histogram", 
        subtitle = "Distribution of Semi-major Axis Values") +
   xlab("Semi-major Axis Value (a)") +
   ylab("Distribution Density") +
@@ -301,9 +301,9 @@ in our sample set.
 
 ```{r Mean_Inference_9 Histogram distribution of NEO and non-NEO period values}
 ggplot(df_neo_per, aes(x=per_y, fill=neo)) +
-  geom_histogram(aes(y=after_stat(density)), position="stack", 
+  geom_histogram(aes(y=after_stat(density)), position="dodge", 
                  bins = ceiling(log(length(df_a_pha$a[df_a_pha$pha == "N"]))) + 1) +
-  labs(title = "Stacked Histogram", 
+  labs(title = "StackedHistogram", 
        subtitle = "Distribution of Orbital Periods") +
   xlab("Orbital Period (per_y)") +
   ylab("Distribution Density") +
@@ -469,11 +469,107 @@ print(f_test_result)
 
 
 
+# Variance Inference 7
 
+**NEOs have lower variance in diameter than non-NEOs.**
 
+```{r Var_Inference_7 Reading NEO and non-NEO diameter values}
+df_neo_d <- na.omit(df[c("neo", "diameter")])
 
+sprintf("There are %d diameter values for NEO asteroids", 
+        length(df_neo_d$diameter[df_neo_d$neo == "Y"]))
+sprintf("There are %d diameter values for non-NEO asteroids", 
+        length(df_neo_d$diameter[df_neo_d$neo == "N"]))
+```
 
+The __diameter__ column holds values for the diameter of an asteroid. We want to 
+know if the diameter of Near Earth Object asteroids vary less than non-NEO asteroids.
 
+## Data Cleaning
+
+First we get rid of diameter values that are outliers.
+
+```{r Var_Inference_7 Remove outliers for diameter on neo}
+get_min_max <- function(values) {
+  q1 <- quantile(values, probs = 0.25, na.rm = T)
+  q3 <- quantile(values, probs = 0.75, na.rm = T)
+  iqr <- q3 - q1
+  span <- 1.5 * iqr
+  min <- q1 - span
+  max <- q3 + span
+  return (c(min, max))
+}
+
+for (cat in c('Y', 'N')) {
+  m <- get_min_max(df_neo_d$diameter[df_neo_d$neo == cat])
+  df_neo_d <- filter(df_neo_d, (neo == cat & diameter >= m[1] & diameter <= m[2] |
+                                neo != cat))
+}
+
+print("After filtering outliers")
+sprintf("There are %d diameter values for NEO asteroids", 
+        length(df_neo_d$diameter[df_neo_d$neo == "Y"]))
+sprintf("There are %d diameter values for non-NEO asteroids", 
+        length(df_neo_d$diameter[df_neo_d$neo == "N"]))
+```
+
+Now let's look at the distribution of diagrams for each type of asteroids
+
+```{r Var_Inference_7 Distribution of NEO and non-NEO asteroid diameters}
+bins = ceiling(log(length(df_neo_d$diameter[df_neo_d$neo == "N"]))) + 1
+
+ggplot(df_neo_d, aes(x=diameter, fill=neo)) +
+  geom_histogram(aes(y=after_stat(density)), position="dodge",
+                 bins = bins) +
+  labs(title = "Stacked Histogram",
+       subtitle = "Distribution of Diameters") +
+  xlab("Diameter (diameter)") +
+  ylab("Distribution Density") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+It looks like the diameter values for non-NEOs tend to vary more than the NEO
+asteroids. Let's look at a boxplot to better understand this:
+
+```{r Var_Inference_7 Boxplot of NEO and non-NEO diameter values}
+ggplot(df_neo_d, aes(x=neo, y=diameter, fill=neo)) +
+  geom_boxplot() +
+  labs(title = "Side by Side Boxplot",
+       subtitle = "diameter by neo") +
+  xlab("Near Earth Object (neo)") +
+  ylab("Diameter (diameter)") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+Visually, we can say that the variance is different. Let's prove this with a two-way
+variance test.
+
+## Inference Test
+
+Let,
+
+  * $s_{neo}^2$ be the variance of NEO asteroids.
+  * $s_{non\_neo}^2$ be the variance of non-NEO asteroids.
+    
+then our hypothesis is as follows
+
+  * $\mathbf{H_0}: s_{neo}^2 \ge s_{non\_neo}^2$
+  * $\mathbf{H_1}: s_{neo}^2 < s_{non\_neo}^2$
+
+and let our level of significance be $\alpha = 0.01$.
+
+```{r Var_Inference_7 Two-way variance test}
+var.test(x=df_neo_d$diameter[df_neo_d$neo == "Y"],
+         y=df_neo_d$diameter[df_neo_d$neo == "N"],
+         conf.level = 0.01,
+         alternative = "less")
+```
+
+The p-value is much lower than our significance value. So we can say with 99\%
+confidence that we can reject the null hypothesis. Meaning, the variance for diameters
+of NEO asteroids are less than non-NEO asteroids.
 
 
 
