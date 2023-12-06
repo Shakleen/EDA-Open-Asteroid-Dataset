@@ -357,15 +357,114 @@ The p-value is much smaller than our significance level. Thus, we have sufficien
 evidence to conclude that the average orbital period of NEO asteroids are less than
 the average orbital period of non-NEO asteroids.
 
+# Mean Inference 5 
+
+We are more confident about the orbital path of named asteroids.
+Values range from 0 to 9 on the logarithmic scale indicating how well an object's orbit is known. A value of 0 indicates a well-determined orbit, while a value of 9 indicates that there are insufficient observations for long-term orbit prediction.
+
+```{r}
+library(plyr)
+df_name_conditioncode<- na.omit(df[c("name", "condition_code")])
+
+nrow(df_name_conditioncode)
+```
+```{r}
+ggplot(df_name_conditioncode, aes(x=condition_code, fill=condition_code)) +
+  geom_bar() +
+  labs(title = "Bar Chart", subtitle = "Condition code distribution") +
+  xlab("Condition code of asteroids") +
+  ylab("Count") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+```{r}
+#Data Cleaning
+df_name_conditioncode <- filter(df_name_conditioncode, condition_code != '')
+df_name_conditioncode <- filter(df_name_conditioncode, condition_code != 'D')
+df_name_conditioncode <- filter(df_name_conditioncode, condition_code != 'E')
+df_name_conditioncode <- filter(df_name_conditioncode, name != '')
+dim(df_name_conditioncode)
+sprintf("Sample count after filtering: %d", nrow(df_name_conditioncode))
+```
+
+```{r}
+unique(df_name_conditioncode$condition_code)
+head(df_name_conditioncode)
+```
+
+```{r}
+ggplot(df_name_conditioncode, aes(x=condition_code, fill=condition_code)) +
+  geom_bar() +
+  labs(title = "Bar Chart", subtitle = "Condition code distribution") +
+  xlab("Condition Code") +
+  ylab("Count") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+```{r}
+count(df_name_conditioncode$condition_code)
+```
+From these table: If a steroid's orbital number is 0, it has a name.
+
+# Mean Inference 6
+
+Orbital paths of NEOs are better known than non-NEOs. 
+```{r}
+
+df_conditioncode_neo<- na.omit(df[c("neo", "condition_code")])
+
+nrow(df_conditioncode_neo)
+```
+```{r}
+df_conditioncode_neo <- filter(df_conditioncode_neo, condition_code != '')
+df_conditioncode_neo <- filter(df_conditioncode_neo, condition_code != 'D')
+df_conditioncode_neo <- filter(df_conditioncode_neo, condition_code != 'E')
+df_conditioncode_neo <- filter(df_conditioncode_neo, neo != '')
+dim(df_conditioncode_neo)
+sprintf("Sample count after filtering: %d", nrow(df_conditioncode_neo))
+```
+
+```{r}
+ggplot(df_conditioncode_neo, aes(x=condition_code, fill=condition_code)) +
+  geom_bar() +
+  labs(title = "Bar Chart", subtitle = "Condition code distribution") +
+  xlab("Condition code of asteroids") +
+  ylab("Count") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+```{r}
+ggplot(df_conditioncode_neo, aes(x=neo, fill=neo)) +
+  geom_bar() +
+  labs(title = "Bar Chart", subtitle = "Condition code distribution") +
+  xlab("Condition code of asteroids") +
+  ylab("Count") +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+#Variance 5
+
+Non-NEOs have a higher variance in moid than NEOs. (neo, moid)
+
+```{r}
+df_neo_moid_var <- na.omit(df[c("neo", "moid")])
+df_neo_moid_var <- filter(df_neo_moid_var, neo != '')
+dim(df_neo_moid_var)
+# Perform the F-test
+f_test_result <- var.test(moid ~ neo, data = df_neo_moid_var, alpha = 0.01)
+
+# Print the result
+print(f_test_result)
+
+```
 
 
+```{r}
 
-
-
-
-
-
-
+```
 
 
 
