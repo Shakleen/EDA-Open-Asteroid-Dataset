@@ -357,13 +357,16 @@ The p-value is much smaller than our significance level. Thus, we have sufficien
 evidence to conclude that the average orbital period of NEO asteroids are less than
 the average orbital period of non-NEO asteroids.
 
-# Mean Inference 5
+# Mean Inference 5 
+
+We are more confident about the orbital path of named asteroids.
+Values range from 0 to 9 on the logarithmic scale indicating how well an object's orbit is known. A value of 0 indicates a well-determined orbit, while a value of 9 indicates that there are insufficient observations for long-term orbit prediction.
 
 ```{r}
 library(plyr)
 df_name_conditioncode<- na.omit(df[c("name", "condition_code")])
 
-nrow(unique(df_name_conditioncode$name))
+nrow(df_name_conditioncode)
 ```
 ```{r}
 ggplot(df_name_conditioncode, aes(x=condition_code, fill=condition_code)) +
@@ -401,9 +404,9 @@ ggplot(df_name_conditioncode, aes(x=condition_code, fill=condition_code)) +
 ```
 
 ```{r}
-
+count(df_name_conditioncode$condition_code)
 ```
-
+From these table: If a steroid's orbital number is 0, it has a name.
 
 
 
