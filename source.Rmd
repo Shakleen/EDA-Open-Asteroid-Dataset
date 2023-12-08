@@ -1,8 +1,9 @@
 ---
-title: "source"
-author: "Eugene Ayonga, Selenge Tulga, Shakleen Ishfar, KT Wirth"
+title: "Asteroid Mining Feasibility Analysis"
+author: "Shakleen Ishfar, Eugene Ayonga, Selenge Tulga, KT Wirth"
 date: "2023-11-14"
 output: pdf_document
+bibliography: references.bib
 ---
 
 ```{r setup, include=FALSE}
@@ -16,7 +17,21 @@ library(dplyr)
 library(MASS)
 ```
 
-# Loading the dataset
+# Introduction
+
+Our modern world relies on natural resources like iron, copper, gold, and nickel, which form the foundation of our civilization. Unfortunately, excessive mining is harming the environment. Looking to the future, space exploration has become more affordable, opening up the possibility of tapping into asteroids for resources.
+
+Asteroids, such as the relatively small metallic ones like Freakazoid, contain billions of dollars' worth of precious metals, even with diameters less than 1,000 meters. On a grander scale, asteroids like 16-Psyche could sustain the world's iron and nickel needs for millions of years.
+
+![An illustration of the solar system showing the two asteroid belts. Image taken from Kurzgesagt](.\images\asteroid-belt.png)
+
+Efficiently mining asteroids requires the development of sustainable and affordable space-grade technology. To achieve this, we must also identify which asteroids to mine and why. This project focuses on addressing the latter part of the challenge. Using statistical methods and techniques, we aim to determine which asteroids can and should be mined. Our inspiration comes from the insightful Kurzgesagt YouTube video titled "Unlimited Resources From Space – Asteroid Mining." [@Kurzgesagt2020]
+
+
+# Dataset
+
+To carry out this study we use the data pulled from NASA’s Jet Propulsion Laboratory 
+(JPL), available in Kaggle. (@OpenAsteroidDataBasu2019)
 
 ```{r Loading dataset}
 df <- read.csv("Asteroid_Updated.csv")
@@ -24,554 +39,727 @@ df <- read.csv("Asteroid_Updated.csv")
 sprintf("Dataset has %d rows and %d columns", nrow(df), ncol(df))
 ```
 
-# Mean Inference 7
+The data set is quite large with nearly 1 million rows of data and 31 different columns. 
 
-**Physically hazardous asteroids (PHA) are typically asteroids that are far away from earth.**
+## Column Description
 
-```{r Mean_Inference_7 Reading PHA and non-PHA semi-axis values}
-df_a_pha <- na.omit(df[c("pha", "a")])
+Let us first introduce the different attributes relevant for our study. Relevant column names from the dataset are enclosed in paranethesis after the name of the attribute.
 
-print("Unique PHA types")
-unique(df_a_pha$pha)
+### Semi Major Axis (a)
+
+The semi-major axis of an asteroid is the average orbital distance from the Sun. It is half of the major axis, which is the total distance between the closest and farthest points of the asteroid’s orbit, also known as the perihelion (q) and aphelion (ad). The semi-major axis is often measured in astronomical units (AU), with 1 AU defined as the mean Earth-Sun distance. [@NASAOrbitsKeplersLaws2023]
+
+```{r Column_Description semi major axis, echo=F}
+print("Distribution of values for semi-major axis")
+summary(df$a)
 ```
 
-PHA (Physically Hazardous Asteroids) are asteroids that are dangerous for earth. In
-the dataset, the column _pha_ signifies whether an asteroid is PHA or not using
-"Y" or "N". Let's see how many _non-null_ values we have for each type. 
+### Eccentricity (e)
 
-```{r Mean_Inference_7 Bar chart showing the number of examples of each pha type asteroid}
-ggplot(df_a_pha, aes(x=pha, fill=pha)) +
-  geom_bar() +
-  labs(title = "Bar Chart", subtitle = "PHA distribution") +
-  xlab("Physically Hazardous Asteroid (PHA)") +
-  ylab("Count") +
-  theme(plot.title = element_text(hjust = 0.5),
-        plot.subtitle = element_text(hjust = 0.5))
+The eccentricity of an asteroid is a measure of how much its orbit deviates from a perfect circle. Orbital shapes can be defined based on eccentricity value. [@WikipediaOrbitalEccentricity2023]
+
+1. Circular orbit: $e=0$
+
+2. Elliptic orbit: $0 < e < 1$
+
+3. Parabolic trajectory: $e = 1$
+
+4. Hyperbolic trajectory: $e > 1$
+
+```{r Column_Description eccentricity, echo=F}
+print("Distribution of values for eccentricity")
+summary(df$e)
 ```
 
-The column __a__ signifies the semi-major axis of an asteroid. The [semi-major axis](https://science.nasa.gov/resource/orbits-and-keplers-laws/) of an asteroid 
-is the average orbital distance from the Sun. It is half of the major axis, which 
-is the total distance between the closest and farthest points of the asteroid’s 
-orbit, also known as the perihelion and aphelion. Let's look at the 5 number summary 
-of semi-major axis value for each asteroid type.
-
-```{r Mean_Inference_7 Five number summary of PHA and non-PHA asteroids}
-print("Five number summary for PHA type asteroids")
-print(fivenum(df_a_pha$a[df_a_pha$pha == "Y"]))
-
-print("Five number summary for non-PHA type asteroids")
-print(fivenum(df_a_pha$a[df_a_pha$pha == "N"]))
-```
-
-## Dataset Cleaning
-
-There are some samples in the dataset where __pha__ is empty. Let's remove those
-samples.
-
-```{r Mean_Inference_7 Remove samples with empty pha value}
-df_a_pha <- filter(df_a_pha, pha != '')
-
-print("Unique PHA types")
-unique(df_a_pha$pha)
-```
-
-Next, we detect and remove the outliers from the samples.
-
-```{r Mean_Inference_7 Remove outliers for a on pha}
-get_min_max <- function(values) {
-  q1 <- quantile(values, probs = 0.25, na.rm = T)
-  q3 <- quantile(values, probs = 0.75, na.rm = T)
-  iqr <- q3 - q1
-  span <- 1.5 * iqr
-  min <- q1 - span
-  max <- q3 + span
-  return (c(min, max))
+```{r Column_Description Distribution of Orbital shape, echo=F}
+define_orbit <- function(e) {
+  if (e < 1e-6) {
+    return("Circular")
+  } else if (0 < e & e < 1) {
+    return("Elliptical")
+  } else if (e > 1) {
+    return("Hyperbolic")
+  }
+  return("Parabolic")
 }
 
-for (cat in c('Y', 'N')) {
-  m <- get_min_max(df_a_pha$a[df_a_pha$pha == cat])
-  df_a_pha <- filter(df_a_pha, (pha == cat & a >= m[1] & a <= m[2] |
-                                pha != cat))
+table(sapply(df$e, define_orbit))
+```
+
+### Geometric Albedo (albedo)
+
+In astronomy, the geometric albedo of a celestial body is the ratio of its actual brightness as seen from the light source (i.e., at zero phase angle) to that of an idealized flat, fully reflecting, diffusively scattering (Lambertian) disk with the same cross-section. Albedo is measured on a scale of zero to one, zero representing a surface that reflects no light, and one representing an object that reflects all incoming light. [@WikipediaGeometricAlbedo2023]
+
+```{r Column_Description Geometric Albedo, echo=F}
+print("Distribution of values for eccentricity")
+summary(df$albedo)
+```
+
+It is possible to estimate what materials constitute the asteroid from its geometric albedo:
+
+* Low albedo (<0.2) suggests carbonaceous chondrites (C-type asteroids) or dark basaltic asteroids.
+
+* High albedo (>0.2) suggests metallic asteroids (M-type), silicate-rich asteroids (S-type), or icy asteroids.
+
+```{r Column_Description Material Constitution, echo=F}
+define_material <- function(albedo) {
+  if (albedo < 0.2) {
+    return("C Type")
+  } 
+  return("M or S Type")
 }
 
-print("After filtering outliers")
-sprintf("There are %d semi-axis values for PHA", 
-        length(df_a_pha$a[df_a_pha$pha == "Y"]))
-sprintf("There are %d semi-axis values for non-PHA", 
-        length(df_a_pha$a[df_a_pha$pha == "N"]))
+table(sapply(na.omit(df$albedo), define_material))
 ```
 
-Let's see how the data is distributed for PHA and non-PHA using a boxplot.
+### Absolute Magnitude Parameter (H)
 
-```{r Mean_Inference_7 Boxplot of PHA and non-PHA a values}
-ggplot(df_a_pha, aes(x=pha, y=a, fill=pha)) +
-  geom_boxplot() +
-  labs(title = "Side by Side Boxplot",
-       subtitle = "a by pha") +
-  xlab("Physically Hazardous Asteroid (pha)") +
-  ylab("Semi-major Axis Value (a)") +
-  theme(plot.title = element_text(hjust = 0.5),
-        plot.subtitle = element_text(hjust = 0.5))
+Stands for absolute magnitude parameter, denotes the brightness of an asteroid. It is defined as the apparent magnitude the asteroid would have if it were observed from the Sun at a distance of 1 Astronomical Unit (AU). This parameter is used in the calculation of an asteroid’s size. The size of an asteroid can be estimated from its absolute magnitude (H) and an assumed geometric albedo. [@NASACNEOSAsteroidSizeEstimator2023]
+
+```{r Column_Description Absolute Magnitude Paramter}
+print("Distribution of values for absolute magnitude parameter")
+summary(df$H)
 ```
 
-Let's see the distribution of values of different __pha__ asteroid types.
+### Magnitude Slope Parameter (G)
 
-```{r Mean_Inference_7 Histogram distribution of PHA and non-PHA a values}
-ggplot(df_a_pha, aes(x=a, fill=pha)) +
-  geom_histogram(aes(y=after_stat(density)), position="dodge", 
-                 bins = ceiling(log(length(df_a_pha$a[df_a_pha$pha == "N"]))) + 1) +
-  labs(title = "Histogram", 
-       subtitle = "Distribution of Semi-major Axis Values") +
-  xlab("Semi-major Axis Value (a)") +
-  ylab("Distribution Density") +
-  theme(plot.title = element_text(hjust = 0.5),
-        plot.subtitle = element_text(hjust = 0.5))
+The magnitude slope parameter is a component of the _H-G magnitude_ system developed for predicting the magnitude of an asteroid as a function of solar phase angle. It can also be used for physical studies, by providing a basis for interpolating or extrapolating brightness from the phase angles observed at one apparition to the phase angles observed at another apparition. Thus allowing one to identify the intrinsic difference in brightness from one apparition to another. This is usually necessary for studies of asteroid shapes and pole positions. [@Harris1989]
+
+```{r Column_Description Magnitude Slope Parameter}
+print("Distribution of values for magnitude slope parameter")
+summary(df$G)
 ```
 
-Let's check the distribution of the populations against a normal distribution.
+### Color filters (ub, bv, ir)
 
-```{r Mean_Inference_7 Q-Q plot to compare against normal distribution}
-ggplot(df_a_pha, aes(sample=a, color=pha)) +
-  stat_qq() +
-  stat_qq_line() +
-  labs(title = "Quantile-Quantile plot",
-       subtitle = "Distribution of Semi-major Axis Values") +
-  xlab("Normal distribution") +
-  ylab("Semi-major Axis value") +
-  theme(plot.title = element_text(hjust = 0.5),
-        plot.subtitle = element_text(hjust = 0.5))
+The three different color index magnitude differences for asteroids. Each is the difference in magnitude when observed through two filters.
+
+* UB: Ultra-violet and blue filter.
+
+* BV: Blue and Visible (Green) filter.
+
+* IR: Infra-Red filter.
+
+```{r Column_Description Color filters}
+print("Distribution of values for magnitude slope parameter")
+summary(df[, c("UB", "BV", "IR")])
 ```
+These color indices are used to characterize the surface properties of the asteroid, as different materials reflect light differently at different wavelengths.
 
-## Hypothesis testing
-
-After filtering out sample has more than 30 examples, meaning we can assume that
-the normality condition holds according to CLT. We have two populations, which are
-asteroids that are PHA and non-PHA. We do not know the population variance for each
-population and can't assume that they are equal. So, it makes sense to do a **Welch test.** 
-Asteroids that are closer to earth will have a smaller semi-major axis while
-asteroids that are further away will have a higher semi-major axis. Essentially,
-we are testing to see if PHA type asteroids have a larger semi-major axis than
-non-PHA type asteroids. Mathematically, our hypothesis are as follow:
-
-* $\mathbf{H_0}: \mu_y \le \mu_n$
-* $\mathbf{H_1}: \mu_y > \mu_n$
-
-Out level of significance is $\alpha = 0.01$.
-
-where $\mu_y$ and $\mu_n$ are mean semi-major axis value for PHA and non-PHA type
-asteroids.
-
-```{r Mean_Inference_7 Welch test}
-a_ypha <- df_a_pha$a[df_a_pha$pha == 'Y']
-a_npha <- df_a_pha$a[df_a_pha$pha == 'N']
-t.test(x=a_ypha, y=a_npha, alternative="greater",
-       paired=F, var.equal=F, conf.level=1-0.01)
-```
-
-We can see that the p-value is 1. Which is way higher than our significance level.
-This means we don't have sufficient evidence to reject the null hypothesis. Interestingly,
-asteroids that are non-PHA have a very probability of having larger semi-major axis
-values. This means that **Physically hazardous asteroids are typically closer to earth.**
-
-# Correlation Inference
-
-**We are more confident about an asteroid's orbital path, the more times we observe it.**
-
-The **condition_code** column stands for orbital condition code. It is also known
-as the **U Uncertainty Parameter**. Values range from 0 to 9 on the logarithmic scale 
-indicating how well an object's orbit is known.  A value of 0 indicates a well-determined 
-orbit, while a value of 9 indicates that there are insufficient observations for 
-long-term orbit prediction.
-
-The column **n_obs_used** signifies the number of observations used for a particular
-asteroid.
-
-```{r Correlation_Inference_1 Creating view with orbital condition code and observation counts}
-df_cc_oc <- na.omit(df[c("condition_code", "n_obs_used")])
-```
-
-## Data Cleaning
-
-```{r Correlation_Inference_1 Unique observation counts}
-print("Unique condition codes")
-print(unique(df_cc_oc$condition_code))
-```
-
-Interestingly, there are more than 10 values in condition code column. After searching
-online extensively, we were unable to find any information on  these orbits. Hence, 
-we come to the conclusion that these are mislabeled. Since they are a very small 
-fraction of the total sample size, we can safely remove them. While we're at it, 
-let's remove the instances that don't have a condition code at all.
-
-```{r Correlation_Inference_1 Cleaning erroneous condition code}
-df_cc_oc <- filter(df_cc_oc, condition_code != '')
-df_cc_oc <- filter(df_cc_oc, condition_code != 'D')
-df_cc_oc <- filter(df_cc_oc, condition_code != 'E')
-sprintf("Sample count after filtering: %d", nrow(df_cc_oc))
-```
-Let's now observe the number of samples in each of the condition codes in a bar
-chart:
-
-```{r Correlation_Inference_1 Barchart showing the distribution of condition codes}
-ggplot(df_cc_oc, aes(x=condition_code, fill=condition_code)) +
-  geom_bar() +
-  labs(title = "Bar Chart", subtitle = "Condition code distribution") +
-  xlab("Condition Code") +
-  ylab("Count") +
-  theme(plot.title = element_text(hjust = 0.5),
-        plot.subtitle = element_text(hjust = 0.5))
-```
-
-Let's clean the dataset by removing the outliers.
-
-```{r Correlation_Inference_1 Discarding outliers from condition code}
-for (a in unique(df_cc_oc$condition_code)) {
-  m <- get_min_max(df_cc_oc$n_obs_used[df_cc_oc$condition_code == a])
-  cond <- (df_cc_oc$n_obs_used >= m[1]) & (df_cc_oc$n_obs_used <= m[2])
-  df_cc_oc <- df_cc_oc[df_cc_oc$condition_code != a | cond,]
-}
-```
-
-We can now check the distribution of each condition code's observation counts.
-
-```{r Correlation_Inference_1 Boxplot showing the distribution of observations per condition codes}
-ggplot(df_cc_oc, aes(x=condition_code, y=n_obs_used, fill=condition_code)) +
-  geom_boxplot() +
-  labs(title = "Side by Side Boxplot",
-       subtitle = "Observations by Condition code") +
-  xlab("Condition code") +
-  ylab("Observations") +
-  theme(plot.title = element_text(hjust = 0.5),
-        plot.subtitle = element_text(hjust = 0.5))
-```
+| Color Filter | C-type      | M-type         | S-type        | Measured Component   | Higher Value Indicates    |
+| ------------ | ----------- | -------------- | ------------- | ------------- | ------------- |
+| UB           | 0.10 - 0.35 | \-0.30 - -0.10 | \-0.05 - 0.15 | Iron                 | More iron content         |
+| BV           | 0.70 - 1.10 | 0.40 - 0.60    | 0.60 - 0.80   | Pyroxene and Olivine | More pyroxene and olivine |
+| IR           | 0.80 - 1.20 | 0.60 - 0.80    | 0.75 - 1.00   | Water Ice            | More water ice            |
 
-Visually, the lower the condition code, the more observations we have for the
-asteroid type.
+### Orbital Condition Code (condition_code)
 
-## Hypothesis test
+Stands for orbital condition code, also known as the U uncertainty parameter. Values range from 0 to 9 on the logarithmic scale indicating how well an object's orbit is known. A value of 0 indicates a well-determined orbit, while a value of 9 indicates that there are insufficient observations for long-term orbit prediction. [@NASATrajectoryBrowserUserGuide2023]
 
-<!-- TODO: Figure out a way to do the hypothesis  -->
+Condition Code | Orbit Longitude runoff
+------- | -------
+0      | < 1.0 arc seconds
+1      | < 4.4 arc seconds
+2      | < 19.6 arc seconds
+3      | < 1.4 arc minutes
+4      | < 6.4 arc minutes
+5      | < 28.2 arc minutes
+6      | < 2.1 degrees
+7      | < 9.2 degrees
+8      | < 40.7 degrees
+9      | > 40.7 degrees
 
-# Mean Inference 9
+### Near Earth Objects (NEO)
 
-**NEOs on average have a lower orbital periods than non-NEOs.**
+The value of 1 means the object is near earth, otherwise its 0. There are 4 types of neos. [@NASACNEOSNEOGroups2023]
 
-```{r Mean_Inference_9 Create temporary dataframe}
-df_neo_per <- na.omit(df[c("neo", "per_y")])
-sprintf("Number of examples: %d", nrow(df_neo_per))
-```
+| Type    | Semi-major Axis (AU) | Aphelion Distance (AU) |
+| ------- | -------------------- | ---------------------- |
+| Atiras  | < 1.0                | < 0.983                |
+| Atens   | < 1.0                | \> 0.983               |
+| Apollos | \> 1.0               | < 1.017                |
+| Amors   | \> 1.0               | 1.017 - 1.300          |
 
-NEO stands for Near Earth Object. Asteroids that are close to earth are classified 
-as NEO asteroids. In the dataset, the column **neo** has values 'Y' and 'N' for asteroids
-that are NEO and not NEO respectively. Let's see how many of each type we have in 
-our sample
+### Minimum Orbit Intersection Distance (moid)
 
-```{r Mean_Inference_9 Count for NEO and non-NEO asteroids}
-df_neo_per %>% group_by(neo) %>% summarise(count = n())
-```
+It is a measure used in astronomy to assess potential close approaches and collision risks between astronomical objects. [@WikipediaMinimumOrbitIntersectionDistance2023]
 
-The [orbital period](https://en.wikipedia.org/wiki/Orbital_period) of an asteroid 
-is the amount of time it takes for the asteroid to complete one orbit around the Sun.
-The column **per_y** holds the value for orbital periods of each asteroid.
+MOID is important to consider for asteroid mining because:
 
-## Data Cleaning
-
-There seems to be 5 samples where the NEO status is blank. Let's remove them.
-
-```{r Mean_Inference_9 Removing blank NEO status samples}
-df_neo_per <- filter(df_neo_per, neo != '')
-sprintf("Number of examples: %d", nrow(df_neo_per))
-
-```
-
-Now, let's remove outlier values for orbital period for NEO and non-NEO asteroids.
-
-```{r Mean_Inference_9 Removing outliers}
-for (a in unique(df_neo_per$neo)) {
-  m <- get_min_max(df_neo_per$per_y[df_neo_per$neo == a])
-  cond <- (df_neo_per$per_y >= m[1]) & (df_neo_per$per_y <= m[2])
-  df_neo_per <- df_neo_per[df_neo_per$neo != a | cond,]
-}
-
-df_neo_per %>% group_by(neo) %>% summarise(count = n())
-```
-
-We can now check the distribution of orbital periods for NEO and non-NEO objects 
-in our sample set.
-
-```{r Mean_Inference_9 Histogram distribution of NEO and non-NEO period values}
-ggplot(df_neo_per, aes(x=per_y, fill=neo)) +
-  geom_histogram(aes(y=after_stat(density)), position="dodge", 
-                 bins = ceiling(log(length(df_a_pha$a[df_a_pha$pha == "N"]))) + 1) +
-  labs(title = "StackedHistogram", 
-       subtitle = "Distribution of Orbital Periods") +
-  xlab("Orbital Period (per_y)") +
-  ylab("Distribution Density") +
-  theme(plot.title = element_text(hjust = 0.5),
-        plot.subtitle = element_text(hjust = 0.5))
-```
-
-From the histogram we can observe that the distribution of orbital period for non-NEO
-asteroids are on average higher than NEO asteroids. Let's take a look at a boxplot to
-get a better look.
-
-```{r Mean_Inference_9 Boxplot showing the distribution of orbital periods}
-ggplot(df_neo_per, aes(x=neo, y=per_y, fill=neo)) +
-  geom_boxplot() +
-  labs(title = "Side by Side Boxplot",
-       subtitle = "Orbital Period by NEO") +
-  xlab("Near Earth Object") +
-  ylab("Orbital Period") +
-  theme(plot.title = element_text(hjust = 0.5),
-        plot.subtitle = element_text(hjust = 0.5))
-```
-
-So visually our hypothesis of NEO asteroids having on average a lower orbital period
-seems to hold. But let's perform a hypothesis test to see if that's really the case.
-
-## Hypothesis Test
-
-Formally let our hypothesis be the following
-
-* $\mathbf{H_0}: \mu_{neo} > \mu_{not} = \mu_{neo} - \mu_{not} \ge 0$
-Meaning, the average orbital period of NEO asteroids are greater than or equal
-to the average orbital period of non-NEO asteroids.
-
-* $\mathbf{H_1}: \mu_{neo} \le \mu_{not} = \mu_{neo} - \mu_{not} < 0$
-Meaning, the average orbital period of NEO asteroids are less than the average 
-orbital period of non-NEO asteroids.
-
-and our significance level $\alpha = 0.01$.
-
-We have 2 populations where we don't know the population variance of either and we
-can't assume the variances are equal. So, we'll be doing a Welch test.
-
-```{r Mean_Inference_9 Welch test}
-t.test(x = df_neo_per$per_y[df_neo_per$neo == 'Y'],
-       y = df_neo_per$per_y[df_neo_per$neo == 'N'],
-       alternative = "less", paired = F,
-       var.equal = F, conf.level = 1 - 0.01)
-```
-
-The p-value is much smaller than our significance level. Thus, we have sufficient
-evidence to conclude that the average orbital period of NEO asteroids are less than
-the average orbital period of non-NEO asteroids.
-
-# Mean Inference 5 
-
-We are more confident about the orbital path of named asteroids.
-Values range from 0 to 9 on the logarithmic scale indicating how well an object's orbit is known. A value of 0 indicates a well-determined orbit, while a value of 9 indicates that there are insufficient observations for long-term orbit prediction.
-
-```{r}
-library(plyr)
-df_name_conditioncode<- na.omit(df[c("name", "condition_code")])
-
-nrow(df_name_conditioncode)
-```
-```{r}
-ggplot(df_name_conditioncode, aes(x=condition_code, fill=condition_code)) +
-  geom_bar() +
-  labs(title = "Bar Chart", subtitle = "Condition code distribution") +
-  xlab("Condition code of asteroids") +
-  ylab("Count") +
-  theme(plot.title = element_text(hjust = 0.5),
-        plot.subtitle = element_text(hjust = 0.5))
-```
-
-```{r}
-#Data Cleaning
-df_name_conditioncode <- filter(df_name_conditioncode, condition_code != '')
-df_name_conditioncode <- filter(df_name_conditioncode, condition_code != 'D')
-df_name_conditioncode <- filter(df_name_conditioncode, condition_code != 'E')
-df_name_conditioncode <- filter(df_name_conditioncode, name != '')
-dim(df_name_conditioncode)
-sprintf("Sample count after filtering: %d", nrow(df_name_conditioncode))
-```
-
-```{r}
-unique(df_name_conditioncode$condition_code)
-head(df_name_conditioncode)
-```
-
-```{r}
-ggplot(df_name_conditioncode, aes(x=condition_code, fill=condition_code)) +
-  geom_bar() +
-  labs(title = "Bar Chart", subtitle = "Condition code distribution") +
-  xlab("Condition Code") +
-  ylab("Count") +
-  theme(plot.title = element_text(hjust = 0.5),
-        plot.subtitle = element_text(hjust = 0.5))
-```
-
-```{r}
-count(df_name_conditioncode$condition_code)
-```
-From these table: If a steroid's orbital number is 0, it has a name.
-
-# Mean Inference 6
-
-Orbital paths of NEOs are better known than non-NEOs. 
-```{r}
-
-df_conditioncode_neo<- na.omit(df[c("neo", "condition_code")])
-
-nrow(df_conditioncode_neo)
-```
-```{r}
-df_conditioncode_neo <- filter(df_conditioncode_neo, condition_code != '')
-df_conditioncode_neo <- filter(df_conditioncode_neo, condition_code != 'D')
-df_conditioncode_neo <- filter(df_conditioncode_neo, condition_code != 'E')
-df_conditioncode_neo <- filter(df_conditioncode_neo, neo != '')
-dim(df_conditioncode_neo)
-sprintf("Sample count after filtering: %d", nrow(df_conditioncode_neo))
-```
-
-```{r}
-ggplot(df_conditioncode_neo, aes(x=condition_code, fill=condition_code)) +
-  geom_bar() +
-  labs(title = "Bar Chart", subtitle = "Condition code distribution") +
-  xlab("Condition code of asteroids") +
-  ylab("Count") +
-  theme(plot.title = element_text(hjust = 0.5),
-        plot.subtitle = element_text(hjust = 0.5))
-```
-```{r}
-ggplot(df_conditioncode_neo, aes(x=neo, fill=neo)) +
-  geom_bar() +
-  labs(title = "Bar Chart", subtitle = "Condition code distribution") +
-  xlab("Condition code of asteroids") +
-  ylab("Count") +
-  theme(plot.title = element_text(hjust = 0.5),
-        plot.subtitle = element_text(hjust = 0.5))
-```
-
-#Variance 5
-
-Non-NEOs have a higher variance in moid than NEOs. (neo, moid)
-
-```{r}
-df_neo_moid_var <- na.omit(df[c("neo", "moid")])
-df_neo_moid_var <- filter(df_neo_moid_var, neo != '')
-dim(df_neo_moid_var)
-# Perform the F-test
-f_test_result <- var.test(moid ~ neo, data = df_neo_moid_var, alpha = 0.01)
-
-# Print the result
-print(f_test_result)
-
-```
-
-
-```{r}
-
-```
-
-
-
-
-# Variance Inference 7
-
-**NEOs have lower variance in diameter than non-NEOs.**
-
-```{r Var_Inference_7 Reading NEO and non-NEO diameter values}
-df_neo_d <- na.omit(df[c("neo", "diameter")])
-
-sprintf("There are %d diameter values for NEO asteroids", 
-        length(df_neo_d$diameter[df_neo_d$neo == "Y"]))
-sprintf("There are %d diameter values for non-NEO asteroids", 
-        length(df_neo_d$diameter[df_neo_d$neo == "N"]))
-```
-
-The __diameter__ column holds values for the diameter of an asteroid. We want to 
-know if the diameter of Near Earth Object asteroids vary less than non-NEO asteroids.
-
-## Data Cleaning
-
-First we get rid of diameter values that are outliers.
-
-```{r Var_Inference_7 Remove outliers for diameter on neo}
-get_min_max <- function(values) {
-  q1 <- quantile(values, probs = 0.25, na.rm = T)
-  q3 <- quantile(values, probs = 0.75, na.rm = T)
-  iqr <- q3 - q1
-  span <- 1.5 * iqr
-  min <- q1 - span
-  max <- q3 + span
-  return (c(min, max))
-}
-
-for (cat in c('Y', 'N')) {
-  m <- get_min_max(df_neo_d$diameter[df_neo_d$neo == cat])
-  df_neo_d <- filter(df_neo_d, (neo == cat & diameter >= m[1] & diameter <= m[2] |
-                                neo != cat))
-}
-
-print("After filtering outliers")
-sprintf("There are %d diameter values for NEO asteroids", 
-        length(df_neo_d$diameter[df_neo_d$neo == "Y"]))
-sprintf("There are %d diameter values for non-NEO asteroids", 
-        length(df_neo_d$diameter[df_neo_d$neo == "N"]))
-```
-
-Now let's look at the distribution of diagrams for each type of asteroids
-
-```{r Var_Inference_7 Distribution of NEO and non-NEO asteroid diameters}
-bins = ceiling(log(length(df_neo_d$diameter[df_neo_d$neo == "N"]))) + 1
-
-ggplot(df_neo_d, aes(x=diameter, fill=neo)) +
-  geom_histogram(aes(y=after_stat(density)), position="dodge",
-                 bins = bins) +
-  labs(title = "Stacked Histogram",
-       subtitle = "Distribution of Diameters") +
-  xlab("Diameter (diameter)") +
-  ylab("Distribution Density") +
-  theme(plot.title = element_text(hjust = 0.5),
-        plot.subtitle = element_text(hjust = 0.5))
-```
-
-It looks like the diameter values for non-NEOs tend to vary more than the NEO
-asteroids. Let's look at a boxplot to better understand this:
-
-```{r Var_Inference_7 Boxplot of NEO and non-NEO diameter values}
-ggplot(df_neo_d, aes(x=neo, y=diameter, fill=neo)) +
-  geom_boxplot() +
-  labs(title = "Side by Side Boxplot",
-       subtitle = "diameter by neo") +
-  xlab("Near Earth Object (neo)") +
-  ylab("Diameter (diameter)") +
-  theme(plot.title = element_text(hjust = 0.5),
-        plot.subtitle = element_text(hjust = 0.5))
-```
-
-Visually, we can say that the variance is different. Let's prove this with a two-way
-variance test.
-
-## Inference Test
-
-Let,
-
-  * $s_{neo}^2$ be the variance of NEO asteroids.
-  * $s_{non\_neo}^2$ be the variance of non-NEO asteroids.
-    
-then our hypothesis is as follows
-
-  * $\mathbf{H_0}: s_{neo}^2 \ge s_{non\_neo}^2$
-  * $\mathbf{H_1}: s_{neo}^2 < s_{non\_neo}^2$
-
-and let our level of significance be $\alpha = 0.01$.
-
-```{r Var_Inference_7 Two-way variance test}
-var.test(x=df_neo_d$diameter[df_neo_d$neo == "Y"],
-         y=df_neo_d$diameter[df_neo_d$neo == "N"],
-         conf.level = 0.01,
-         alternative = "less")
-```
-
-The p-value is much lower than our significance value. So we can say with 99\%
-confidence that we can reject the null hypothesis. Meaning, the variance for diameters
-of NEO asteroids are less than non-NEO asteroids.
+* A lower MOID indicates a closer approach to Earth, potentially reducing the cost and travel time for mining missions.
 
+* Consider the frequency and duration of close approaches for efficient mission planning.
 
+* Smaller objects may have significantly lower MOIDs, making them more accessible.
+
+# Data Processing
+
+## Cleaning
+
+## Imputation
+
+## Custom Columns
+
+### Distance From Earth
+
+### Asteroid Value
+
+### Feasibility Score
+
+# Exploratory Data Analysis
+
+# Conclusion
+
+# References
+
+<!-- # Mean Inference 7 -->
+
+<!-- **Physically hazardous asteroids (PHA) are typically asteroids that are far away from earth.** -->
+
+<!-- ```{r Mean_Inference_7 Reading PHA and non-PHA semi-axis values} -->
+<!-- df_a_pha <- na.omit(df[c("pha", "a")]) -->
+
+<!-- print("Unique PHA types") -->
+<!-- unique(df_a_pha$pha) -->
+<!-- ``` -->
+
+<!-- PHA (Physically Hazardous Asteroids) are asteroids that are dangerous for earth. In -->
+<!-- the dataset, the column _pha_ signifies whether an asteroid is PHA or not using -->
+<!-- "Y" or "N". Let's see how many _non-null_ values we have for each type.  -->
+
+<!-- ```{r Mean_Inference_7 Bar chart showing the number of examples of each pha type asteroid} -->
+<!-- ggplot(df_a_pha, aes(x=pha, fill=pha)) + -->
+<!--   geom_bar() + -->
+<!--   labs(title = "Bar Chart", subtitle = "PHA distribution") + -->
+<!--   xlab("Physically Hazardous Asteroid (PHA)") + -->
+<!--   ylab("Count") + -->
+<!--   theme(plot.title = element_text(hjust = 0.5), -->
+<!--         plot.subtitle = element_text(hjust = 0.5)) -->
+<!-- ``` -->
+
+<!-- The column __a__ signifies the semi-major axis of an asteroid. The [semi-major axis](https://science.nasa.gov/resource/orbits-and-keplers-laws/) of an asteroid  -->
+<!-- is the average orbital distance from the Sun. It is half of the major axis, which  -->
+<!-- is the total distance between the closest and farthest points of the asteroid’s  -->
+<!-- orbit, also known as the perihelion and aphelion. Let's look at the 5 number summary  -->
+<!-- of semi-major axis value for each asteroid type. -->
+
+<!-- ```{r Mean_Inference_7 Five number summary of PHA and non-PHA asteroids} -->
+<!-- print("Five number summary for PHA type asteroids") -->
+<!-- print(fivenum(df_a_pha$a[df_a_pha$pha == "Y"])) -->
+
+<!-- print("Five number summary for non-PHA type asteroids") -->
+<!-- print(fivenum(df_a_pha$a[df_a_pha$pha == "N"])) -->
+<!-- ``` -->
+
+<!-- ## Dataset Cleaning -->
+
+<!-- There are some samples in the dataset where __pha__ is empty. Let's remove those -->
+<!-- samples. -->
+
+<!-- ```{r Mean_Inference_7 Remove samples with empty pha value} -->
+<!-- df_a_pha <- filter(df_a_pha, pha != '') -->
+
+<!-- print("Unique PHA types") -->
+<!-- unique(df_a_pha$pha) -->
+<!-- ``` -->
+
+<!-- Next, we detect and remove the outliers from the samples. -->
+
+<!-- ```{r Mean_Inference_7 Remove outliers for a on pha} -->
+<!-- get_min_max <- function(values) { -->
+<!--   q1 <- quantile(values, probs = 0.25, na.rm = T) -->
+<!--   q3 <- quantile(values, probs = 0.75, na.rm = T) -->
+<!--   iqr <- q3 - q1 -->
+<!--   span <- 1.5 * iqr -->
+<!--   min <- q1 - span -->
+<!--   max <- q3 + span -->
+<!--   return (c(min, max)) -->
+<!-- } -->
+
+<!-- for (cat in c('Y', 'N')) { -->
+<!--   m <- get_min_max(df_a_pha$a[df_a_pha$pha == cat]) -->
+<!--   df_a_pha <- filter(df_a_pha, (pha == cat & a >= m[1] & a <= m[2] | -->
+<!--                                 pha != cat)) -->
+<!-- } -->
+
+<!-- print("After filtering outliers") -->
+<!-- sprintf("There are %d semi-axis values for PHA",  -->
+<!--         length(df_a_pha$a[df_a_pha$pha == "Y"])) -->
+<!-- sprintf("There are %d semi-axis values for non-PHA",  -->
+<!--         length(df_a_pha$a[df_a_pha$pha == "N"])) -->
+<!-- ``` -->
+
+<!-- Let's see how the data is distributed for PHA and non-PHA using a boxplot. -->
+
+<!-- ```{r Mean_Inference_7 Boxplot of PHA and non-PHA a values} -->
+<!-- ggplot(df_a_pha, aes(x=pha, y=a, fill=pha)) + -->
+<!--   geom_boxplot() + -->
+<!--   labs(title = "Side by Side Boxplot", -->
+<!--        subtitle = "a by pha") + -->
+<!--   xlab("Physically Hazardous Asteroid (pha)") + -->
+<!--   ylab("Semi-major Axis Value (a)") + -->
+<!--   theme(plot.title = element_text(hjust = 0.5), -->
+<!--         plot.subtitle = element_text(hjust = 0.5)) -->
+<!-- ``` -->
+
+<!-- Let's see the distribution of values of different __pha__ asteroid types. -->
+
+<!-- ```{r Mean_Inference_7 Histogram distribution of PHA and non-PHA a values} -->
+<!-- ggplot(df_a_pha, aes(x=a, fill=pha)) + -->
+<!--   geom_histogram(aes(y=after_stat(density)), position="dodge",  -->
+<!--                  bins = ceiling(log(length(df_a_pha$a[df_a_pha$pha == "N"]))) + 1) + -->
+<!--   labs(title = "Histogram",  -->
+<!--        subtitle = "Distribution of Semi-major Axis Values") + -->
+<!--   xlab("Semi-major Axis Value (a)") + -->
+<!--   ylab("Distribution Density") + -->
+<!--   theme(plot.title = element_text(hjust = 0.5), -->
+<!--         plot.subtitle = element_text(hjust = 0.5)) -->
+<!-- ``` -->
+
+<!-- Let's check the distribution of the populations against a normal distribution. -->
+
+<!-- ```{r Mean_Inference_7 Q-Q plot to compare against normal distribution} -->
+<!-- ggplot(df_a_pha, aes(sample=a, color=pha)) + -->
+<!--   stat_qq() + -->
+<!--   stat_qq_line() + -->
+<!--   labs(title = "Quantile-Quantile plot", -->
+<!--        subtitle = "Distribution of Semi-major Axis Values") + -->
+<!--   xlab("Normal distribution") + -->
+<!--   ylab("Semi-major Axis value") + -->
+<!--   theme(plot.title = element_text(hjust = 0.5), -->
+<!--         plot.subtitle = element_text(hjust = 0.5)) -->
+<!-- ``` -->
+
+<!-- ## Hypothesis testing -->
+
+<!-- After filtering out sample has more than 30 examples, meaning we can assume that -->
+<!-- the normality condition holds according to CLT. We have two populations, which are -->
+<!-- asteroids that are PHA and non-PHA. We do not know the population variance for each -->
+<!-- population and can't assume that they are equal. So, it makes sense to do a **Welch test.**  -->
+<!-- Asteroids that are closer to earth will have a smaller semi-major axis while -->
+<!-- asteroids that are further away will have a higher semi-major axis. Essentially, -->
+<!-- we are testing to see if PHA type asteroids have a larger semi-major axis than -->
+<!-- non-PHA type asteroids. Mathematically, our hypothesis are as follow: -->
+
+<!-- * $\mathbf{H_0}: \mu_y \le \mu_n$ -->
+<!-- * $\mathbf{H_1}: \mu_y > \mu_n$ -->
+
+<!-- Out level of significance is $\alpha = 0.01$. -->
+
+<!-- where $\mu_y$ and $\mu_n$ are mean semi-major axis value for PHA and non-PHA type -->
+<!-- asteroids. -->
+
+<!-- ```{r Mean_Inference_7 Welch test} -->
+<!-- a_ypha <- df_a_pha$a[df_a_pha$pha == 'Y'] -->
+<!-- a_npha <- df_a_pha$a[df_a_pha$pha == 'N'] -->
+<!-- t.test(x=a_ypha, y=a_npha, alternative="greater", -->
+<!--        paired=F, var.equal=F, conf.level=1-0.01) -->
+<!-- ``` -->
+
+<!-- We can see that the p-value is 1. Which is way higher than our significance level. -->
+<!-- This means we don't have sufficient evidence to reject the null hypothesis. Interestingly, -->
+<!-- asteroids that are non-PHA have a very probability of having larger semi-major axis -->
+<!-- values. This means that **Physically hazardous asteroids are typically closer to earth.** -->
+
+<!-- # Correlation Inference -->
+
+<!-- **We are more confident about an asteroid's orbital path, the more times we observe it.** -->
+
+<!-- The **condition_code** column stands for orbital condition code. It is also known -->
+<!-- as the **U Uncertainty Parameter**. Values range from 0 to 9 on the logarithmic scale  -->
+<!-- indicating how well an object's orbit is known.  A value of 0 indicates a well-determined  -->
+<!-- orbit, while a value of 9 indicates that there are insufficient observations for  -->
+<!-- long-term orbit prediction. -->
+
+<!-- The column **n_obs_used** signifies the number of observations used for a particular -->
+<!-- asteroid. -->
+
+<!-- ```{r Correlation_Inference_1 Creating view with orbital condition code and observation counts} -->
+<!-- df_cc_oc <- na.omit(df[c("condition_code", "n_obs_used")]) -->
+<!-- ``` -->
+
+<!-- ## Data Cleaning -->
+
+<!-- ```{r Correlation_Inference_1 Unique observation counts} -->
+<!-- print("Unique condition codes") -->
+<!-- print(unique(df_cc_oc$condition_code)) -->
+<!-- ``` -->
+
+<!-- Interestingly, there are more than 10 values in condition code column. After searching -->
+<!-- online extensively, we were unable to find any information on  these orbits. Hence,  -->
+<!-- we come to the conclusion that these are mislabeled. Since they are a very small  -->
+<!-- fraction of the total sample size, we can safely remove them. While we're at it,  -->
+<!-- let's remove the instances that don't have a condition code at all. -->
+
+<!-- ```{r Correlation_Inference_1 Cleaning erroneous condition code} -->
+<!-- df_cc_oc <- filter(df_cc_oc, condition_code != '') -->
+<!-- df_cc_oc <- filter(df_cc_oc, condition_code != 'D') -->
+<!-- df_cc_oc <- filter(df_cc_oc, condition_code != 'E') -->
+<!-- sprintf("Sample count after filtering: %d", nrow(df_cc_oc)) -->
+<!-- ``` -->
+<!-- Let's now observe the number of samples in each of the condition codes in a bar -->
+<!-- chart: -->
+
+<!-- ```{r Correlation_Inference_1 Barchart showing the distribution of condition codes} -->
+<!-- ggplot(df_cc_oc, aes(x=condition_code, fill=condition_code)) + -->
+<!--   geom_bar() + -->
+<!--   labs(title = "Bar Chart", subtitle = "Condition code distribution") + -->
+<!--   xlab("Condition Code") + -->
+<!--   ylab("Count") + -->
+<!--   theme(plot.title = element_text(hjust = 0.5), -->
+<!--         plot.subtitle = element_text(hjust = 0.5)) -->
+<!-- ``` -->
+
+<!-- Let's clean the dataset by removing the outliers. -->
+
+<!-- ```{r Correlation_Inference_1 Discarding outliers from condition code} -->
+<!-- for (a in unique(df_cc_oc$condition_code)) { -->
+<!--   m <- get_min_max(df_cc_oc$n_obs_used[df_cc_oc$condition_code == a]) -->
+<!--   cond <- (df_cc_oc$n_obs_used >= m[1]) & (df_cc_oc$n_obs_used <= m[2]) -->
+<!--   df_cc_oc <- df_cc_oc[df_cc_oc$condition_code != a | cond,] -->
+<!-- } -->
+<!-- ``` -->
+
+<!-- We can now check the distribution of each condition code's observation counts. -->
+
+<!-- ```{r Correlation_Inference_1 Boxplot showing the distribution of observations per condition codes} -->
+<!-- ggplot(df_cc_oc, aes(x=condition_code, y=n_obs_used, fill=condition_code)) + -->
+<!--   geom_boxplot() + -->
+<!--   labs(title = "Side by Side Boxplot", -->
+<!--        subtitle = "Observations by Condition code") + -->
+<!--   xlab("Condition code") + -->
+<!--   ylab("Observations") + -->
+<!--   theme(plot.title = element_text(hjust = 0.5), -->
+<!--         plot.subtitle = element_text(hjust = 0.5)) -->
+<!-- ``` -->
+
+<!-- Visually, the lower the condition code, the more observations we have for the -->
+<!-- asteroid type. -->
+
+<!-- ## Hypothesis test -->
+
+<!-- <!-- TODO: Figure out a way to do the hypothesis  --> -->
+
+<!-- # Mean Inference 9 -->
+
+<!-- **NEOs on average have a lower orbital periods than non-NEOs.** -->
+
+<!-- ```{r Mean_Inference_9 Create temporary dataframe} -->
+<!-- df_neo_per <- na.omit(df[c("neo", "per_y")]) -->
+<!-- sprintf("Number of examples: %d", nrow(df_neo_per)) -->
+<!-- ``` -->
+
+<!-- NEO stands for Near Earth Object. Asteroids that are close to earth are classified  -->
+<!-- as NEO asteroids. In the dataset, the column **neo** has values 'Y' and 'N' for asteroids -->
+<!-- that are NEO and not NEO respectively. Let's see how many of each type we have in  -->
+<!-- our sample -->
+
+<!-- ```{r Mean_Inference_9 Count for NEO and non-NEO asteroids} -->
+<!-- df_neo_per %>% group_by(neo) %>% summarise(count = n()) -->
+<!-- ``` -->
+
+<!-- The [orbital period](https://en.wikipedia.org/wiki/Orbital_period) of an asteroid  -->
+<!-- is the amount of time it takes for the asteroid to complete one orbit around the Sun. -->
+<!-- The column **per_y** holds the value for orbital periods of each asteroid. -->
+
+<!-- ## Data Cleaning -->
+
+<!-- There seems to be 5 samples where the NEO status is blank. Let's remove them. -->
+
+<!-- ```{r Mean_Inference_9 Removing blank NEO status samples} -->
+<!-- df_neo_per <- filter(df_neo_per, neo != '') -->
+<!-- sprintf("Number of examples: %d", nrow(df_neo_per)) -->
+
+<!-- ``` -->
+
+<!-- Now, let's remove outlier values for orbital period for NEO and non-NEO asteroids. -->
+
+<!-- ```{r Mean_Inference_9 Removing outliers} -->
+<!-- for (a in unique(df_neo_per$neo)) { -->
+<!--   m <- get_min_max(df_neo_per$per_y[df_neo_per$neo == a]) -->
+<!--   cond <- (df_neo_per$per_y >= m[1]) & (df_neo_per$per_y <= m[2]) -->
+<!--   df_neo_per <- df_neo_per[df_neo_per$neo != a | cond,] -->
+<!-- } -->
+
+<!-- df_neo_per %>% group_by(neo) %>% summarise(count = n()) -->
+<!-- ``` -->
+
+<!-- We can now check the distribution of orbital periods for NEO and non-NEO objects  -->
+<!-- in our sample set. -->
+
+<!-- ```{r Mean_Inference_9 Histogram distribution of NEO and non-NEO period values} -->
+<!-- ggplot(df_neo_per, aes(x=per_y, fill=neo)) + -->
+<!--   geom_histogram(aes(y=after_stat(density)), position="dodge",  -->
+<!--                  bins = ceiling(log(length(df_a_pha$a[df_a_pha$pha == "N"]))) + 1) + -->
+<!--   labs(title = "StackedHistogram",  -->
+<!--        subtitle = "Distribution of Orbital Periods") + -->
+<!--   xlab("Orbital Period (per_y)") + -->
+<!--   ylab("Distribution Density") + -->
+<!--   theme(plot.title = element_text(hjust = 0.5), -->
+<!--         plot.subtitle = element_text(hjust = 0.5)) -->
+<!-- ``` -->
+
+<!-- From the histogram we can observe that the distribution of orbital period for non-NEO -->
+<!-- asteroids are on average higher than NEO asteroids. Let's take a look at a boxplot to -->
+<!-- get a better look. -->
+
+<!-- ```{r Mean_Inference_9 Boxplot showing the distribution of orbital periods} -->
+<!-- ggplot(df_neo_per, aes(x=neo, y=per_y, fill=neo)) + -->
+<!--   geom_boxplot() + -->
+<!--   labs(title = "Side by Side Boxplot", -->
+<!--        subtitle = "Orbital Period by NEO") + -->
+<!--   xlab("Near Earth Object") + -->
+<!--   ylab("Orbital Period") + -->
+<!--   theme(plot.title = element_text(hjust = 0.5), -->
+<!--         plot.subtitle = element_text(hjust = 0.5)) -->
+<!-- ``` -->
+
+<!-- So visually our hypothesis of NEO asteroids having on average a lower orbital period -->
+<!-- seems to hold. But let's perform a hypothesis test to see if that's really the case. -->
+
+<!-- ## Hypothesis Test -->
+
+<!-- Formally let our hypothesis be the following -->
+
+<!-- * $\mathbf{H_0}: \mu_{neo} > \mu_{not} = \mu_{neo} - \mu_{not} \ge 0$ -->
+<!-- Meaning, the average orbital period of NEO asteroids are greater than or equal -->
+<!-- to the average orbital period of non-NEO asteroids. -->
+
+<!-- * $\mathbf{H_1}: \mu_{neo} \le \mu_{not} = \mu_{neo} - \mu_{not} < 0$ -->
+<!-- Meaning, the average orbital period of NEO asteroids are less than the average  -->
+<!-- orbital period of non-NEO asteroids. -->
+
+<!-- and our significance level $\alpha = 0.01$. -->
+
+<!-- We have 2 populations where we don't know the population variance of either and we -->
+<!-- can't assume the variances are equal. So, we'll be doing a Welch test. -->
+
+<!-- ```{r Mean_Inference_9 Welch test} -->
+<!-- t.test(x = df_neo_per$per_y[df_neo_per$neo == 'Y'], -->
+<!--        y = df_neo_per$per_y[df_neo_per$neo == 'N'], -->
+<!--        alternative = "less", paired = F, -->
+<!--        var.equal = F, conf.level = 1 - 0.01) -->
+<!-- ``` -->
+
+<!-- The p-value is much smaller than our significance level. Thus, we have sufficient -->
+<!-- evidence to conclude that the average orbital period of NEO asteroids are less than -->
+<!-- the average orbital period of non-NEO asteroids. -->
+
+<!-- # Mean Inference 5  -->
+
+<!-- We are more confident about the orbital path of named asteroids. -->
+<!-- Values range from 0 to 9 on the logarithmic scale indicating how well an object's orbit is known. A value of 0 indicates a well-determined orbit, while a value of 9 indicates that there are insufficient observations for long-term orbit prediction. -->
+
+<!-- ```{r} -->
+<!-- library(plyr) -->
+<!-- df_name_conditioncode<- na.omit(df[c("name", "condition_code")]) -->
+
+<!-- nrow(df_name_conditioncode) -->
+<!-- ``` -->
+<!-- ```{r} -->
+<!-- ggplot(df_name_conditioncode, aes(x=condition_code, fill=condition_code)) + -->
+<!--   geom_bar() + -->
+<!--   labs(title = "Bar Chart", subtitle = "Condition code distribution") + -->
+<!--   xlab("Condition code of asteroids") + -->
+<!--   ylab("Count") + -->
+<!--   theme(plot.title = element_text(hjust = 0.5), -->
+<!--         plot.subtitle = element_text(hjust = 0.5)) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- #Data Cleaning -->
+<!-- df_name_conditioncode <- filter(df_name_conditioncode, condition_code != '') -->
+<!-- df_name_conditioncode <- filter(df_name_conditioncode, condition_code != 'D') -->
+<!-- df_name_conditioncode <- filter(df_name_conditioncode, condition_code != 'E') -->
+<!-- df_name_conditioncode <- filter(df_name_conditioncode, name != '') -->
+<!-- dim(df_name_conditioncode) -->
+<!-- sprintf("Sample count after filtering: %d", nrow(df_name_conditioncode)) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- unique(df_name_conditioncode$condition_code) -->
+<!-- head(df_name_conditioncode) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- ggplot(df_name_conditioncode, aes(x=condition_code, fill=condition_code)) + -->
+<!--   geom_bar() + -->
+<!--   labs(title = "Bar Chart", subtitle = "Condition code distribution") + -->
+<!--   xlab("Condition Code") + -->
+<!--   ylab("Count") + -->
+<!--   theme(plot.title = element_text(hjust = 0.5), -->
+<!--         plot.subtitle = element_text(hjust = 0.5)) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- count(df_name_conditioncode$condition_code) -->
+<!-- ``` -->
+<!-- From these table: If a steroid's orbital number is 0, it has a name. -->
+
+<!-- # Mean Inference 6 -->
+
+<!-- Orbital paths of NEOs are better known than non-NEOs.  -->
+<!-- ```{r} -->
+
+<!-- df_conditioncode_neo<- na.omit(df[c("neo", "condition_code")]) -->
+
+<!-- nrow(df_conditioncode_neo) -->
+<!-- ``` -->
+<!-- ```{r} -->
+<!-- df_conditioncode_neo <- filter(df_conditioncode_neo, condition_code != '') -->
+<!-- df_conditioncode_neo <- filter(df_conditioncode_neo, condition_code != 'D') -->
+<!-- df_conditioncode_neo <- filter(df_conditioncode_neo, condition_code != 'E') -->
+<!-- df_conditioncode_neo <- filter(df_conditioncode_neo, neo != '') -->
+<!-- dim(df_conditioncode_neo) -->
+<!-- sprintf("Sample count after filtering: %d", nrow(df_conditioncode_neo)) -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- ggplot(df_conditioncode_neo, aes(x=condition_code, fill=condition_code)) + -->
+<!--   geom_bar() + -->
+<!--   labs(title = "Bar Chart", subtitle = "Condition code distribution") + -->
+<!--   xlab("Condition code of asteroids") + -->
+<!--   ylab("Count") + -->
+<!--   theme(plot.title = element_text(hjust = 0.5), -->
+<!--         plot.subtitle = element_text(hjust = 0.5)) -->
+<!-- ``` -->
+<!-- ```{r} -->
+<!-- ggplot(df_conditioncode_neo, aes(x=neo, fill=neo)) + -->
+<!--   geom_bar() + -->
+<!--   labs(title = "Bar Chart", subtitle = "Condition code distribution") + -->
+<!--   xlab("Condition code of asteroids") + -->
+<!--   ylab("Count") + -->
+<!--   theme(plot.title = element_text(hjust = 0.5), -->
+<!--         plot.subtitle = element_text(hjust = 0.5)) -->
+<!-- ``` -->
+
+<!-- #Variance 5 -->
+
+<!-- Non-NEOs have a higher variance in moid than NEOs. (neo, moid) -->
+
+<!-- ```{r} -->
+<!-- df_neo_moid_var <- na.omit(df[c("neo", "moid")]) -->
+<!-- df_neo_moid_var <- filter(df_neo_moid_var, neo != '') -->
+<!-- dim(df_neo_moid_var) -->
+<!-- # Perform the F-test -->
+<!-- f_test_result <- var.test(moid ~ neo, data = df_neo_moid_var, alpha = 0.01) -->
+
+<!-- # Print the result -->
+<!-- print(f_test_result) -->
+
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+
+<!-- ``` -->
+
+
+
+
+<!-- # Variance Inference 7 -->
+
+<!-- **NEOs have lower variance in diameter than non-NEOs.** -->
+
+<!-- ```{r Var_Inference_7 Reading NEO and non-NEO diameter values} -->
+<!-- df_neo_d <- na.omit(df[c("neo", "diameter")]) -->
+
+<!-- sprintf("There are %d diameter values for NEO asteroids",  -->
+<!--         length(df_neo_d$diameter[df_neo_d$neo == "Y"])) -->
+<!-- sprintf("There are %d diameter values for non-NEO asteroids",  -->
+<!--         length(df_neo_d$diameter[df_neo_d$neo == "N"])) -->
+<!-- ``` -->
+
+<!-- The __diameter__ column holds values for the diameter of an asteroid. We want to  -->
+<!-- know if the diameter of Near Earth Object asteroids vary less than non-NEO asteroids. -->
+
+<!-- ## Data Cleaning -->
+
+<!-- First we get rid of diameter values that are outliers. -->
+
+<!-- ```{r Var_Inference_7 Remove outliers for diameter on neo} -->
+<!-- get_min_max <- function(values) { -->
+<!--   q1 <- quantile(values, probs = 0.25, na.rm = T) -->
+<!--   q3 <- quantile(values, probs = 0.75, na.rm = T) -->
+<!--   iqr <- q3 - q1 -->
+<!--   span <- 1.5 * iqr -->
+<!--   min <- q1 - span -->
+<!--   max <- q3 + span -->
+<!--   return (c(min, max)) -->
+<!-- } -->
+
+<!-- for (cat in c('Y', 'N')) { -->
+<!--   m <- get_min_max(df_neo_d$diameter[df_neo_d$neo == cat]) -->
+<!--   df_neo_d <- filter(df_neo_d, (neo == cat & diameter >= m[1] & diameter <= m[2] | -->
+<!--                                 neo != cat)) -->
+<!-- } -->
+
+<!-- print("After filtering outliers") -->
+<!-- sprintf("There are %d diameter values for NEO asteroids",  -->
+<!--         length(df_neo_d$diameter[df_neo_d$neo == "Y"])) -->
+<!-- sprintf("There are %d diameter values for non-NEO asteroids",  -->
+<!--         length(df_neo_d$diameter[df_neo_d$neo == "N"])) -->
+<!-- ``` -->
+
+<!-- Now let's look at the distribution of diagrams for each type of asteroids -->
+
+<!-- ```{r Var_Inference_7 Distribution of NEO and non-NEO asteroid diameters} -->
+<!-- bins = ceiling(log(length(df_neo_d$diameter[df_neo_d$neo == "N"]))) + 1 -->
+
+<!-- ggplot(df_neo_d, aes(x=diameter, fill=neo)) + -->
+<!--   geom_histogram(aes(y=after_stat(density)), position="dodge", -->
+<!--                  bins = bins) + -->
+<!--   labs(title = "Stacked Histogram", -->
+<!--        subtitle = "Distribution of Diameters") + -->
+<!--   xlab("Diameter (diameter)") + -->
+<!--   ylab("Distribution Density") + -->
+<!--   theme(plot.title = element_text(hjust = 0.5), -->
+<!--         plot.subtitle = element_text(hjust = 0.5)) -->
+<!-- ``` -->
+
+<!-- It looks like the diameter values for non-NEOs tend to vary more than the NEO -->
+<!-- asteroids. Let's look at a boxplot to better understand this: -->
+
+<!-- ```{r Var_Inference_7 Boxplot of NEO and non-NEO diameter values} -->
+<!-- ggplot(df_neo_d, aes(x=neo, y=diameter, fill=neo)) + -->
+<!--   geom_boxplot() + -->
+<!--   labs(title = "Side by Side Boxplot", -->
+<!--        subtitle = "diameter by neo") + -->
+<!--   xlab("Near Earth Object (neo)") + -->
+<!--   ylab("Diameter (diameter)") + -->
+<!--   theme(plot.title = element_text(hjust = 0.5), -->
+<!--         plot.subtitle = element_text(hjust = 0.5)) -->
+<!-- ``` -->
+
+<!-- Visually, we can say that the variance is different. Let's prove this with a two-way -->
+<!-- variance test. -->
+
+<!-- ## Inference Test -->
+
+<!-- Let, -->
+
+<!--   * $s_{neo}^2$ be the variance of NEO asteroids. -->
+<!--   * $s_{non\_neo}^2$ be the variance of non-NEO asteroids. -->
+
+<!-- then our hypothesis is as follows -->
+
+<!--   * $\mathbf{H_0}: s_{neo}^2 \ge s_{non\_neo}^2$ -->
+<!--   * $\mathbf{H_1}: s_{neo}^2 < s_{non\_neo}^2$ -->
+
+<!-- and let our level of significance be $\alpha = 0.01$. -->
+
+<!-- ```{r Var_Inference_7 Two-way variance test} -->
+<!-- var.test(x=df_neo_d$diameter[df_neo_d$neo == "Y"], -->
+<!--          y=df_neo_d$diameter[df_neo_d$neo == "N"], -->
+<!--          conf.level = 0.01, -->
+<!--          alternative = "less") -->
+<!-- ``` -->
+
+<!-- The p-value is much lower than our significance value. So we can say with 99\% -->
+<!-- confidence that we can reject the null hypothesis. Meaning, the variance for diameters -->
+<!-- of NEO asteroids are less than non-NEO asteroids. -->
+
+<!-- #  -->
 
 
 
