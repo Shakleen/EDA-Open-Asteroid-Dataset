@@ -545,6 +545,7 @@ An important consideration when mining asteroids is the size of the asteroid. Ty
 
 We're going to carry out this hypothesis test using a two-sample t-test or Welch Test with $\alpha = 0.0001$.
 
+<!-- Columns: diameter and neo -->
 
 ```{r EDA Asteroid_Size visualization, echo=T}
 # TODO: Visualization
@@ -583,6 +584,8 @@ There are 4 different types of NEOs based on semi-major axis and aphelion distan
 
 We're going to carry out this hypothesis test with $\alpha = 0.0001$.
 
+<!-- Columns: diameter and neo_type -->
+
 ```{r EDA Diameter_Difference visualization, echo=T}
 # TODO: Visualization
 ```
@@ -612,13 +615,15 @@ We're going to carry out this hypothesis test with $\alpha = 0.0001$.
 
 ## Value Difference
 
-Among the 4 different types of NEO asteroids, we want to determine which type has most percentage of metallic asteroids. The more metallic asteroid, the better our chance of mining precious materials. For this, we're going to a goodness of fit test. We want to find distinctions in proportions among the different asteroid types and then find which one has the highest. Our hypothesis is as follows:
+Among the 4 different types of NEO asteroids, we want to determine which type has most percentage of metallic asteroids. The more metallic asteroid, the better our chance of mining precious materials. For this, we're going to a chisqaure test of independence. We want to find distinctions in proportions among the different asteroid types and then find which one has the highest. Our hypothesis is as follows:
 
 * Null Hypothesis: TODO
 
 * Alternative Hypothesis: TODO
 
 We're going to carry out this hypothesis test with $\alpha = 0.0001$.
+
+<!-- Columns: material and neo_type -->
 
 ```{r EDA Value_Difference visualization, echo=T}
 # TODO: Visualization
@@ -635,8 +640,8 @@ We're going to carry out this hypothesis test with $\alpha = 0.0001$.
 
 <!-- TODO: Hypothesis test -->
 
-```{r EDA Value_Difference Goodness of fit, echo=T}
-# TODO: Hypothesis testing (Goodness of fit)
+```{r EDA Value_Difference chisqaure test of independence, echo=T}
+# TODO: Hypothesis testing (chisqaure test of independence)
 ```
 
 <!-- TODO: Reject / fail to reject null hypothesis -->
