@@ -163,10 +163,12 @@ The value of 1 means the object is near earth, otherwise its 0. There are 4 type
 
 | Type    | Semi-major Axis (AU) | Aphelion Distance (AU) |
 | ------- | -------------------- | ---------------------- |
-| Atiras  | < 1.0                | < 0.983                |
-| Atens   | < 1.0                | \> 0.983               |
-| Apollos | \> 1.0               | < 1.017                |
-| Amors   | \> 1.0               | 1.017 - 1.300          |
+| Atiras  | < 1.1                | < 1.033                |
+| Atens   | < 1.1                | \> 1.033               |
+| Apollos | \> 1.1               | < 1.307                |
+| Amors   | \> 1.1               | \> 1.307               |
+
+![Orbital diagram showing the different types of NEO asteroids](.\images\neo_orbital_paths.png)
 
 ### Minimum Orbit Intersection Distance (moid)
 
@@ -373,7 +375,43 @@ df$material <- sapply(df$albedo, define_material)
 table(df$material)
 ```
 
+### NEO Type
+
+In this section, we create a column to represent the 4 NEO types.
+
+```{r Custom_Column NEO types, echo=T}
+define_neo_type <- function(a, ad) {
+  if (a < 1.1) {
+    if (ad < 1.033) {
+      return("Atiras")
+    } else {
+      return("Atens")
+    }
+  } else {
+    if (ad < 1.307) {
+      return("Apollos")
+    } 
+    return("Amors")
+  }
+}
+
+df <- df %>% rowwise() %>% mutate(neo_type = define_neo_type(a, ad))
+table(df$neo_type)
+```
+
 # Exploratory Data Analysis
+
+In this section we'd like to go over the different factors that play into asteroid mining. In particular, we try to answer the following question from a feasibility stand point:
+
+1. **Distance**: It's easier to mine asteroids the closer they are. On average, is the mean distance of NEO asteroids less than 1 AU?
+
+2. **Material**: Metallic resources are more valuable and thus metallic asteroids should be sought out for mining. Does NEO asteroids have proportionately more metallic asteroids than non-NEO asteroids?
+
+3. **Asteroid size**: Large asteroids have more resources than smaller asteroids. On average, is the mean diameter of NEO asteroids smaller than non-NEO asteroids?
+
+4. **Diameter difference**: There are 4 different types of NEO asteroids. Is there a significant difference between their average diameter?
+
+5. **Value difference**: From a material value standpoint, which NEO type is the best to mine?
 
 ## Distance from Earth
 
@@ -452,7 +490,7 @@ Most near earth asteroids are at most 1 AU from our planet. That's great news fo
 
 ## Material Value
 
-Metals, like iron, nickel, gold, platinum, are the building block of our civilization. They are precious resources and will be highly valuable to mine from asteroids. Asteroids composed of metals are thus highly valuable. So for asteroid mining to be feasible we might want to seek out and mine metallic asteroids more than carbonaceous ones. However, most asteroids we know are carbonaceous. In accordance with out previous decision then, it doesn't make much sense to go mine asteroids that aren't NEO as most of those will be carbonaceous while being far away. We'd like to test this claim.
+Metals, like iron, nickel, gold, platinum, are the building block of our civilization. They are precious resources and will be highly valuable to mine from asteroids. Asteroids composed of metals are thus highly valuable. So for asteroid mining to be feasible we might want to seek out and mine metallic asteroids more than carbonaceous ones. However, most asteroids we know are carbonaceous. In accordance with out previous decision then, it doesn't make much sense to go mine asteroids that aren't NEO as most of those will be carbonaceous while being far away. We'd like to test this claim with a two-sample proportion test.
 
 * Null Hypothesis: $\mathbf{H_0}: p_c \le p_f$ which means the proportion of metallic NEO asteroids ($p_c$) are less than or equal to the proportion of metallic non-NEO asteroids ($p_f$).
 
@@ -496,6 +534,118 @@ Since the p-value is greater than our confidence level, we fail to reject the nu
 ### Verdict
 
 This test allows us to see the trade off between distance and value. It proves that we are more likely to get highly valuable asteroids when we don't limit ourselves to near earth asteroids. This is because a greater proportion of asteroids that are not NEO are metallic and these are highly desirable asteroids.
+
+## Asteroid size
+
+An important consideration when mining asteroids is the size of the asteroid. Typically, a large asteroid will have more valuable materials than a smaller asteroid. It is thus important to know where the larger asteroids lie, near or far away from earth. We want to test if the asteroids near earth are smaller than the asteroids far away from earth. So our hypothesis are
+
+* Null Hypothesis: TODO
+
+* Alternative Hypothesis: TODO
+
+We're going to carry out this hypothesis test using a two-sample t-test or Welch Test with $\alpha = 0.0001$.
+
+
+```{r EDA Asteroid_Size visualization, echo=T}
+# TODO: Visualization
+```
+
+<!-- TODO: What can be seen and inferred from the chart -->
+
+<!-- TODO: If transformation needs to be done, explain what transformation and why -->
+
+```{r EDA Asteroid_Size transformation, echo=T}
+# TODO: Transformation (if required)
+```
+
+
+<!-- TODO: Hypothesis test -->
+
+```{r EDA Asteroid_Size two-sample hypothesis test, echo=T}
+# TODO: Hypothesis testing (Two-sample t-test)
+```
+
+<!-- TODO: Reject / fail to reject null hypothesis -->
+
+### Verdict
+
+<!-- TODO: What does this mean for the question we asked? -->
+
+
+
+## Diameter Difference
+
+There are 4 different types of NEOs based on semi-major axis and aphelion distance: Amors, Apollos, Atens, and Atiras. Amos is the closest to earth's orbit while Atiras is the furthest away. We want to see if the size of the asteroids vary across these 4 types. Meaning, we'd like to do a hypothesis test using ANOVA, where we check if the average diameter of asteroids is different among these 4 types of asteroids. If so, we'd like to know which NEO asteroids are on average larger from pairwise t-tests. Thus our hypothesis is as follows:
+
+* Null Hypothesis: TODO
+
+* Alternative Hypothesis: TODO
+
+We're going to carry out this hypothesis test with $\alpha = 0.0001$.
+
+```{r EDA Diameter_Difference visualization, echo=T}
+# TODO: Visualization
+```
+
+<!-- TODO: What can be seen and inferred from the chart -->
+
+<!-- TODO: If transformation needs to be done, explain what transformation and why -->
+
+```{r EDA Diameter_Difference transformation, echo=T}
+# TODO: Transformation (if required)
+```
+
+
+<!-- TODO: Hypothesis test -->
+
+```{r EDA Diameter_Difference One-way ANOVA, echo=T}
+# TODO: Hypothesis testing (One-way ANOVA)
+```
+
+<!-- TODO: Reject / fail to reject null hypothesis -->
+
+<!-- TODO: If reject null hypothesis, do pairwise t-test to see which pairs are different -->
+
+### Verdict
+
+<!-- TODO: What does this mean for the question we asked? -->
+
+## Value Difference
+
+Among the 4 different types of NEO asteroids, we want to determine which type has most percentage of metallic asteroids. The more metallic asteroid, the better our chance of mining precious materials. For this, we're going to a goodness of fit test. We want to find distinctions in proportions among the different asteroid types and then find which one has the highest. Our hypothesis is as follows:
+
+* Null Hypothesis: TODO
+
+* Alternative Hypothesis: TODO
+
+We're going to carry out this hypothesis test with $\alpha = 0.0001$.
+
+```{r EDA Value_Difference visualization, echo=T}
+# TODO: Visualization
+```
+
+<!-- TODO: What can be seen and inferred from the chart -->
+
+<!-- TODO: If transformation needs to be done, explain what transformation and why -->
+
+```{r EDA Value_Difference transformation, echo=T}
+# TODO: Transformation (if required)
+```
+
+
+<!-- TODO: Hypothesis test -->
+
+```{r EDA Value_Difference Goodness of fit, echo=T}
+# TODO: Hypothesis testing (Goodness of fit)
+```
+
+<!-- TODO: Reject / fail to reject null hypothesis -->
+
+<!-- TODO: If reject, then say which has the highest proportion -->
+
+### Verdict
+
+<!-- TODO: What does this mean for the question we asked? -->
 
 # Conclusion
 
