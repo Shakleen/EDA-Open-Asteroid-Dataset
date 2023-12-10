@@ -381,22 +381,14 @@ In this section, we create a column to represent the 4 NEO types.
 
 ```{r Custom_Column NEO types, echo=T}
 define_neo_type <- function(a, ad) {
-  if (a < 1.1) {
-    if (ad < 1.033) {
-      return("Atiras")
-    } else {
-      return("Atens")
-    }
-  } else {
-    if (ad < 1.307) {
-      return("Apollos")
-    } 
-    return("Amors")
-  }
+  ifelse(a < 1.1,
+         ifelse(ad < 1.033, "Atiras", "Atens"),
+         ifelse(ad < 1.307, "Apollos", "Amors"))
 }
 
 df <- df %>% rowwise() %>% mutate(neo_type = define_neo_type(a, ad))
 table(df$neo_type)
+
 ```
 
 # Exploratory Data Analysis
@@ -548,7 +540,7 @@ We're going to carry out this hypothesis test using a two-sample t-test or Welch
 <!-- Columns: diameter and neo -->
 
 ```{r EDA Asteroid_Size visualization, echo=T}
-# TODO: Visualization
+
 ```
 
 <!-- TODO: What can be seen and inferred from the chart -->
@@ -578,19 +570,52 @@ We're going to carry out this hypothesis test using a two-sample t-test or Welch
 
 There are 4 different types of NEOs based on semi-major axis and aphelion distance: Amors, Apollos, Atens, and Atiras. Amos is the closest to earth's orbit while Atiras is the furthest away. We want to see if the size of the asteroids vary across these 4 types. Meaning, we'd like to do a hypothesis test using ANOVA, where we check if the average diameter of asteroids is different among these 4 types of asteroids. If so, we'd like to know which NEO asteroids are on average larger from pairwise t-tests. Thus our hypothesis is as follows:
 
-* Null Hypothesis: TODO
+* Null Hypothesis: $\mathbf{H_0}: \mu_1 = \mu_2 = \mu_3 = \mu_4 $. There is no significant difference in the average diameter of asteroids among the four types (Amors, Apollos, Atens, and Atiras).
 
-* Alternative Hypothesis: TODO
+* Alternative Hypothesis:  $\mathbf{H_1}: \text{At least one } \mu_i \text{ is different} $ There is a significant difference in the average diameter of asteroids among the four types (Amors, Apollos, Atens, and Atiras).
 
 We're going to carry out this hypothesis test with $\alpha = 0.0001$.
 
 <!-- Columns: diameter and neo_type -->
 
 ```{r EDA Diameter_Difference visualization, echo=T}
-# TODO: Visualization
+library(dplyr)
+
+df_neo_dia_filter <- df[c("diameter", "neo_type")]
+
+df_neo_dia <- df_neo_dia_filter[df_neo_dia_filter$diameter > 0, ]
+
+# Assuming your data frame is named 'neo_data'
+boxplot(diameter ~ neo_type, data = df_neo_dia, col = "lightblue", main = "Asteroid Diameters by NEO Type")
+
+ggplot(df_neo_dia, aes(x = neo_type, y = diameter, fill = neo_type)) +
+  geom_violin(trim = FALSE) +
+  geom_boxplot(width = 0.2, fill = "white") +
+  labs(title = "Asteroid Diameters by NEO Type",
+       x = "NEO Type",
+       y = "Diameter")
+df_neo_dia %>%
+  group_by(neo_type) %>%
+  summarise(avg_diameter = mean(diameter)) %>%
+  ggplot(aes(x = neo_type, y = avg_diameter, fill = neo_type)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Average Asteroid Diameter by NEO Type",
+       x = "NEO Type",
+       y = "Average Diameter")
+
+
 ```
 
-<!-- TODO: What can be seen and inferred from the chart -->
+```{r EDA Diameter_Difference Mean table, echo=T}
+
+mean_diameters <- df_neo_dia %>%
+  group_by(neo_type) %>%
+  summarise(avg_diameter = mean(diameter))
+
+print(mean_diameters)
+
+```
+
 
 <!-- TODO: If transformation needs to be done, explain what transformation and why -->
 
@@ -602,16 +627,25 @@ We're going to carry out this hypothesis test with $\alpha = 0.0001$.
 <!-- TODO: Hypothesis test -->
 
 ```{r EDA Diameter_Difference One-way ANOVA, echo=T}
-# TODO: Hypothesis testing (One-way ANOVA)
+
+# Assuming your data frame is named 'df_neo_dia'
+# Make sure 'diameter' and 'neo_type' are the correct column names
+
+# Perform ANOVA
+anova_result <- aov(diameter ~ neo_type, data = df_neo_dia)
+summary(anova_result)
+
+```
+Given significance level of 0.0001, the p-value (0.00448) is still less than 0.0001. Therefore, reject the null hypothesis.
+
+```{r EDA Diameter_Difference Pair t-test, echo=T}
+pairwise.t.test(df_neo_dia$diameter, df_neo_dia$neo_type, p.adjust.method = "bonferroni")
 ```
 
-<!-- TODO: Reject / fail to reject null hypothesis -->
-
-<!-- TODO: If reject null hypothesis, do pairwise t-test to see which pairs are different -->
 
 ### Verdict
 
-<!-- TODO: What does this mean for the question we asked? -->
+The results of the ANOVA test suggest that there are statistically significant differences in average diameters among the different NEO types (Amors, Apollos, Atens, Atiras). 
 
 ## Value Difference
 
