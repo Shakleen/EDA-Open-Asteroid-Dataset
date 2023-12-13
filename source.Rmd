@@ -20,6 +20,7 @@ library(dplyr)
 library(MASS)
 library(corrplot)
 library(caret)
+library(DescTools)
 ```
 
 # Introduction
@@ -381,22 +382,14 @@ In this section, we create a column to represent the 4 NEO types.
 
 ```{r Custom_Column NEO types, echo=T}
 define_neo_type <- function(a, ad) {
-  if (a < 1.1) {
-    if (ad < 1.033) {
-      return("Atiras")
-    } else {
-      return("Atens")
-    }
-  } else {
-    if (ad < 1.307) {
-      return("Apollos")
-    } 
-    return("Amors")
-  }
+  ifelse(a < 1.1,
+         ifelse(ad < 1.033, "Atiras", "Atens"),
+         ifelse(ad < 1.307, "Apollos", "Amors"))
 }
 
 df <- df %>% rowwise() %>% mutate(neo_type = define_neo_type(a, ad))
 table(df$neo_type)
+
 ```
 
 # Exploratory Data Analysis
@@ -548,7 +541,7 @@ We're going to carry out this hypothesis test using a two-sample t-test or Welch
 <!-- Columns: diameter and neo -->
 
 ```{r EDA Asteroid_Size visualization, echo=T}
-# TODO: Visualization
+
 ```
 
 <!-- TODO: What can be seen and inferred from the chart -->
@@ -578,40 +571,104 @@ We're going to carry out this hypothesis test using a two-sample t-test or Welch
 
 There are 4 different types of NEOs based on semi-major axis and aphelion distance: Amors, Apollos, Atens, and Atiras. Amos is the closest to earth's orbit while Atiras is the furthest away. We want to see if the size of the asteroids vary across these 4 types. Meaning, we'd like to do a hypothesis test using ANOVA, where we check if the average diameter of asteroids is different among these 4 types of asteroids. If so, we'd like to know which NEO asteroids are on average larger from pairwise t-tests. Thus our hypothesis is as follows:
 
-* Null Hypothesis: TODO
+* Null Hypothesis: $\mathbf{H_0}: \mu_1 = \mu_2 = \mu_3 = \mu_4 $. There is no significant difference in the average diameter of asteroids among the four types (Amors, Apollos, Atens, and Atiras).
 
-* Alternative Hypothesis: TODO
+* Alternative Hypothesis:  $\mathbf{H_1}: \text{At least one } \mu_i \text{ is different} $ There is a significant difference in the average diameter of asteroids among the four types (Amors, Apollos, Atens, and Atiras).
 
 We're going to carry out this hypothesis test with $\alpha = 0.0001$.
 
 <!-- Columns: diameter and neo_type -->
 
 ```{r EDA Diameter_Difference visualization, echo=T}
-# TODO: Visualization
+df_neo_dia_filter <- df[c("diameter", "neo_type")]
+
+df_neo_dia <- df_neo_dia_filter[df_neo_dia_filter$diameter > 0, ]
 ```
 
-<!-- TODO: What can be seen and inferred from the chart -->
-
-<!-- TODO: If transformation needs to be done, explain what transformation and why -->
-
-```{r EDA Diameter_Difference transformation, echo=T}
-# TODO: Transformation (if required)
+```{r EDA Diameter_Difference Mean table, echo=T}
+mean_diameters <- df_neo_dia %>%
+  group_by(neo_type) %>%
+  summarise(avg_diameter = mean(diameter),count = n())
+print(mean_diameters)
 ```
 
 
-<!-- TODO: Hypothesis test -->
+```{r EDA Diameter_Difference boxplot}
+ ggplot(df_neo_dia, aes(x = neo_type, y = diameter, fill = neo_type)) +
+  geom_violin(trim = FALSE) +
+  geom_boxplot(width = 0.2, fill = "white") +
+  labs(title = "Asteroid Diameters by NEO Type",
+       x = "NEO Type",
+       y = "Diameter")
+
+```
+```{r EDA Diameters Identifing outliers}
+neo_type_outliers <- df_neo_dia %>%
+  group_by(neo_type) %>%
+  mutate(outliers_iqr = diameter < quantile(diameter, 0.25) - 1.5 * IQR(diameter) | 
+                         diameter > quantile(diameter, 0.75) + 1.5 * IQR(diameter))
+print(nrow(neo_type_outliers))
+
+```
+
+```{r EDA Diameters Removing outliers}
+df_neo_dia <- df_neo_dia %>%
+  group_by(neo_type) %>%
+  mutate(
+    q1 = quantile(diameter, 0.25),
+    q3 = quantile(diameter, 0.75),
+    iqr = q3 - q1,
+    lower_bound = q1 - 1.5 * iqr,
+    upper_bound = q3 + 1.5 * iqr
+  ) %>%
+  ungroup()
+
+# Filter out the outliers
+df_neo_dia_no_outliers <- df_neo_dia %>%
+  filter(diameter >= lower_bound & diameter <= upper_bound)
+
+print(nrow(df_neo_dia_no_outliers))
+```
+```{r}
+mean_diameters <- df_neo_dia_no_outliers %>%
+  group_by(neo_type) %>%
+  summarise(avg_diameter = mean(diameter),count = n())
+print(mean_diameters)
+```
+```{r Diameter_Difference without outliers boxplot}
+ ggplot(df_neo_dia_no_outliers, aes(x = neo_type, y = diameter, fill = neo_type)) +
+  geom_violin(trim = FALSE) +
+  geom_boxplot(width = 0.2, fill = "white") +
+  labs(title = "Asteroid Diameters by NEO Type",
+       x = "NEO Type",
+       y = "Diameter")
+```
 
 ```{r EDA Diameter_Difference One-way ANOVA, echo=T}
-# TODO: Hypothesis testing (One-way ANOVA)
+
+anova_result <- aov(diameter~ neo_type, data = df_neo_dia_no_outliers)
+summary(anova_result)
+
 ```
+Given the p-value of 2e-16 and a significance level of 0.0001. We can reject the null hypothesis. Therefore, there is sufficient evidence to conclude that there is a significant difference in the average diameter of asteroids among the four types (Amors, Apollos, Atens, and Atiras).
 
-<!-- TODO: Reject / fail to reject null hypothesis -->
 
-<!-- TODO: If reject null hypothesis, do pairwise t-test to see which pairs are different -->
+```{r EDA Diameter_Difference Pair t-test, echo=T}
+# Perform Tukey's HSD test
+tukey_result <- TukeyHSD(anova_result)
+
+print(tukey_result)
+
+plot(tukey_result, las = 1)
+
+```
+There are significant differences in mean diameters between Apollos and both Atens and Atiras, with Apollos having smaller mean diameters.
+Atens and Atiras do not show a significant difference in mean diameters.
+For Atens vs. Apollos and Atiras vs. Apollos, there is no significant difference in mean diameters.
 
 ### Verdict
 
-<!-- TODO: What does this mean for the question we asked? -->
+Amor's diameter is more bigger than other types and good news is Amors is the closest type from our planet. Also, count of Amor is significantly higher than other types. 
 
 ## Value Difference
 
