@@ -982,7 +982,7 @@ if (atens_quantity < atiras_quantity) {
 
 After the above proportion computation between every possible NEO combinations, we can then graph the proportions for a quick visualization and derivation of a logical decision on asteroid mining feasibility in terms of economic feasibility and technical costs.
 
-```{r, echo=TRUE}
+```{r EDA Value_Difference NEO metallic proportion combinations Visualization, echo=T}
 
 # Graphing metallic material proportions across NEO combinations
 
