@@ -497,50 +497,6 @@ Since the p-value is greater than our confidence level, we fail to reject the nu
 
 This test allows us to see the trade off between distance and value. It proves that we are more likely to get highly valuable asteroids when we don't limit ourselves to near earth asteroids. This is because a greater proportion of asteroids that are not NEO are metallic and these are highly desirable asteroids.
 
-## Asteroid size
-
-An important consideration when mining asteroids is the size of the asteroid. Typically, a large asteroid will have more valuable materials than a smaller asteroid. It is thus important to know where the larger asteroids lie, near or far away from earth. We want to test if the asteroids near earth are smaller than the asteroids far away from earth. So our hypothesis are
-
-* Null Hypothesis: TODO
-
-* Alternative Hypothesis: TODO
-
-We're going to carry out this hypothesis test using a two-sample t-test or Welch Test with $\alpha = 0.0001$.
-
-<!-- Columns: diameter and neo -->
-
-```{r EDA Value-Difference material, echo=TRUE}
-# NEO Material
-```
-
-
-```{r EDA Asteroid_Size visualization, echo=T}
-# TODO: Visualization
-```
-
-<!-- TODO: What can be seen and inferred from the chart -->
-
-<!-- TODO: If transformation needs to be done, explain what transformation and why -->
-
-```{r EDA Asteroid_Size transformation, echo=T}
-# TODO: Transformation (if required)
-```
-
-
-<!-- TODO: Hypothesis test -->
-
-```{r EDA Asteroid_Size two-sample hypothesis test, echo=T}
-# TODO: Hypothesis testing (Two-sample t-test)
-```
-
-<!-- TODO: Reject / fail to reject null hypothesis -->
-
-### Verdict
-
-<!-- TODO: What does this mean for the question we asked? -->
-
-
-
 ## Diameter Difference
 
 There are 4 different types of NEOs based on semi-major axis and aphelion distance: Amors, Apollos, Atens, and Atiras. Amos is the closest to earth's orbit while Atiras is the furthest away. We want to see if the size of the asteroids vary across these 4 types. Meaning, we'd like to do a hypothesis test using ANOVA, where we check if the average diameter of asteroids is different among these 4 types of asteroids. If so, we'd like to know which NEO asteroids are on average larger from pairwise t-tests. Thus our hypothesis is as follows:
