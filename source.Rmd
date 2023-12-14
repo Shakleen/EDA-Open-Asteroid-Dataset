@@ -39,8 +39,6 @@ To carry out this study we use the data pulled from NASA’s Jet Propulsion Labo
 (JPL), available in Kaggle. (@OpenAsteroidDataBasu2019)
 
 ```{r Loading dataset}
-# df <- read.csv("/home/gene/DEV/FALL2023/Statistics/ASTEROIDMINING/EDA-Open-Asteroid-Dataset/Asteroid_Updated.csv")
-
 df <- read.csv("Asteroid_Updated.csv")
 
 sprintf("Dataset has %d rows and %d columns", nrow(df), ncol(df))
