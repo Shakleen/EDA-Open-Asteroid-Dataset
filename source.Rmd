@@ -110,37 +110,6 @@ print("Distribution of values for absolute magnitude parameter")
 summary(df$H)
 ```
 
-### Magnitude Slope Parameter (G)
-
-The magnitude slope parameter is a component of the _H-G magnitude_ system developed for predicting the magnitude of an asteroid as a function of solar phase angle. It can also be used for physical studies, by providing a basis for interpolating or extrapolating brightness from the phase angles observed at one apparition to the phase angles observed at another apparition. Thus allowing one to identify the intrinsic difference in brightness from one apparition to another. This is usually necessary for studies of asteroid shapes and pole positions. [@Harris1989]
-
-```{r Column_Description Magnitude Slope Parameter}
-print("Distribution of values for magnitude slope parameter")
-summary(df$G)
-```
-
-### Color filters (ub, bv, ir)
-
-The three different color index magnitude differences for asteroids. Each is the difference in magnitude when observed through two filters.
-
-* UB: Ultra-violet and blue filter.
-
-* BV: Blue and Visible (Green) filter.
-
-* IR: Infra-Red filter.
-
-```{r Column_Description Color filters}
-print("Distribution of values for magnitude slope parameter")
-summary(df[, c("UB", "BV", "IR")])
-```
-These color indices are used to characterize the surface properties of the asteroid, as different materials reflect light differently at different wavelengths.
-
-| Color Filter | C-type      | M-type         | S-type        | Measured Component   | Higher Value Indicates    |
-| ------------ | ----------- | -------------- | ------------- | ------------- | ------------- |
-| UB           | 0.10 - 0.35 | \-0.30 - -0.10 | \-0.05 - 0.15 | Iron                 | More iron content         |
-| BV           | 0.70 - 1.10 | 0.40 - 0.60    | 0.60 - 0.80   | Pyroxene and Olivine | More pyroxene and olivine |
-| IR           | 0.80 - 1.20 | 0.60 - 0.80    | 0.75 - 1.00   | Water Ice            | More water ice            |
-
 ### Orbital Condition Code (condition_code)
 
 Stands for orbital condition code, also known as the U uncertainty parameter. Values range from 0 to 9 on the logarithmic scale indicating how well an object's orbit is known. A value of 0 indicates a well-determined orbit, while a value of 9 indicates that there are insufficient observations for long-term orbit prediction. [@NASATrajectoryBrowserUserGuide2023]
@@ -400,11 +369,11 @@ In this section we'd like to go over the different factors that play into astero
 
 2. **Material**: Metallic resources are more valuable and thus metallic asteroids should be sought out for mining. Does NEO asteroids have proportionately more metallic asteroids than non-NEO asteroids?
 
-3. **Asteroid size**: Large asteroids have more resources than smaller asteroids. On average, is the mean diameter of NEO asteroids smaller than non-NEO asteroids?
+3. **Diameter difference**: There are 4 different types of NEO asteroids. Is there a significant difference between their average diameter?
 
-4. **Diameter difference**: There are 4 different types of NEO asteroids. Is there a significant difference between their average diameter?
+4. **Value difference**: From a material value standpoint, which NEO type is the best to mine?
 
-5. **Value difference**: From a material value standpoint, which NEO type is the best to mine?
+5. **Correlation between diameter and H**: H is often used to calculate the size of an asteroid. In cases when we don't have a reliable estimate for the diameter we'll need to use this value. In that case, is there a strong correlation between these values?
 
 ## Distance from Earth
 
@@ -528,52 +497,13 @@ Since the p-value is greater than our confidence level, we fail to reject the nu
 
 This test allows us to see the trade off between distance and value. It proves that we are more likely to get highly valuable asteroids when we don't limit ourselves to near earth asteroids. This is because a greater proportion of asteroids that are not NEO are metallic and these are highly desirable asteroids.
 
-## Asteroid size
-
-An important consideration when mining asteroids is the size of the asteroid. Typically, a large asteroid will have more valuable materials than a smaller asteroid. It is thus important to know where the larger asteroids lie, near or far away from earth. We want to test if the asteroids near earth are smaller than the asteroids far away from earth. So our hypothesis are
-
-* Null Hypothesis: TODO
-
-* Alternative Hypothesis: TODO
-
-We're going to carry out this hypothesis test using a two-sample t-test or Welch Test with $\alpha = 0.0001$.
-
-<!-- Columns: diameter and neo -->
-
-```{r EDA Asteroid_Size visualization, echo=T}
-
-```
-
-<!-- TODO: What can be seen and inferred from the chart -->
-
-<!-- TODO: If transformation needs to be done, explain what transformation and why -->
-
-```{r EDA Asteroid_Size transformation, echo=T}
-# TODO: Transformation (if required)
-```
-
-
-<!-- TODO: Hypothesis test -->
-
-```{r EDA Asteroid_Size two-sample hypothesis test, echo=T}
-# TODO: Hypothesis testing (Two-sample t-test)
-```
-
-<!-- TODO: Reject / fail to reject null hypothesis -->
-
-### Verdict
-
-<!-- TODO: What does this mean for the question we asked? -->
-
-
-
 ## Diameter Difference
 
 There are 4 different types of NEOs based on semi-major axis and aphelion distance: Amors, Apollos, Atens, and Atiras. Amos is the closest to earth's orbit while Atiras is the furthest away. We want to see if the size of the asteroids vary across these 4 types. Meaning, we'd like to do a hypothesis test using ANOVA, where we check if the average diameter of asteroids is different among these 4 types of asteroids. If so, we'd like to know which NEO asteroids are on average larger from pairwise t-tests. Thus our hypothesis is as follows:
 
-* Null Hypothesis: $\mathbf{H_0}: \mu_1 = \mu_2 = \mu_3 = \mu_4 $. There is no significant difference in the average diameter of asteroids among the four types (Amors, Apollos, Atens, and Atiras).
+* Null Hypothesis: $\mathbf{H_0}: \mu_1 = \mu_2 = \mu_3 = \mu_4$. There is no significant difference in the average diameter of asteroids among the four types (Amors, Apollos, Atens, and Atiras).
 
-* Alternative Hypothesis:  $\mathbf{H_1}: \text{At least one } \mu_i \text{ is different} $ There is a significant difference in the average diameter of asteroids among the four types (Amors, Apollos, Atens, and Atiras).
+* Alternative Hypothesis:  $\mathbf{H_1}: \text{At least one } \mu_i \text{ is different}$ There is a significant difference in the average diameter of asteroids among the four types (Amors, Apollos, Atens, and Atiras).
 
 We're going to carry out this hypothesis test with $\alpha = 0.0001$.
 
@@ -629,7 +559,7 @@ df_neo_dia_no_outliers <- df_neo_dia %>%
 
 print(nrow(df_neo_dia_no_outliers))
 ```
-```{r}
+```{r EDA Diameters Mean diameter of each neo}
 mean_diameters <- df_neo_dia_no_outliers %>%
   group_by(neo_type) %>%
   summarise(avg_diameter = mean(diameter),count = n())
@@ -709,7 +639,63 @@ We're going to carry out this hypothesis test with $\alpha = 0.0001$.
 
 <!-- TODO: What does this mean for the question we asked? -->
 
+
+## Correlation between H and Diameter
+
+In many cases, we don't have reliable estimates for asteroid diameters. In our dataset almost 80\% of the diameter values are null. In these cases, we might need to use an alternative attribute to measure the size of an asteroid. This could be H, as it is used quite often to determine asteroid size at NASA. So, we want to know if H is correlated with the diameter value. 
+
+```{r EDA Scatterplot}
+df_temp <- df[df$diameter >= 0, c("diameter", "H")]
+
+ggplot(df_temp, aes(x=diameter, y=H)) +
+    geom_point() +
+    labs(title = "Scatter Plot",
+         subtitle = "Between H and diameter") +
+    xlab("Diameter") +
+    ylab("Absolute Magnitude Parameter (H)") +
+    theme(plot.title = element_text(hjust = 0.5),
+          plot.subtitle = element_text(hjust = 0.5))
+
+```
+
+From the scatter plot, it looks like there is an inverse relationship between H and diameter. As diameter increases, H decreases. Let's see what the pearson's and spearman's correlation says.
+
+```{r EDA Correlation}
+sprintf("Correlation according to pearson is %.3f", 
+        cor(df_temp$diameter, df_temp$H, method = "pearson"))
+sprintf("Correlation according to pearson is %.3f", 
+        cor(df_temp$diameter, df_temp$H, method = "spearman"))
+```
+
+In both cases, we can see that there is somewhat of a negative correlation. However, we need to know if this is statistically significant. We'll do a pearson's and spearman's correlation test. Here our hypothesis are as follows:
+
+* Null Hypothesis: $\mathbf{H_0}: \rho = 0$ meaning that diameter and H are independent.
+
+* Alternative Hypothesis: $\mathbf{H_1}: \rho \ne 0$ meaning that diameter and H are correlated.
+
+We'll do this test with a 99.99\% confidence level.
+
+```{r EDA Pearsons Correlation test}
+cor.test(df_temp$diameter, df_temp$H, method = "pearson", conf.level = 1-0.0001,
+         exact = F)
+```
+
+As the p-value is less than our significance level, we can reject the null hypothesis. Meaning, diameter and H aren't independent. As there are a lot of outliers, let's do a spearman's correlation test with the same parameters as well.
+
+```{r EDA Spearmans Correlation test}
+cor.test(df_temp$diameter, df_temp$H, method = "spearman", conf.level = 1-0.0001,
+         exact = F)
+```
+
+The results are the same for spearman as well. 
+
+### Verdict
+
+So when we don't know the diameter value, we can somewhat use H as a replacement. The smaller the H value is the larger the asteroid will be as the two attributes are inversely related
+
 # Conclusion
+
+We can see that most asteroids that are near us are less than 1 AU away from earth. Amongst them Amor has the greatest proportion of metallic asteroids and also has the largest asteroids as well. For asteroid minign to be feasible, we should start with Amor Near Earth Asteroids. As they are the closest and offers the most value.
 
 # References
 
