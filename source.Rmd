@@ -1,7 +1,7 @@
 ---
 title: "Asteroid Mining Feasibility Analysis"
 author: "Shakleen Ishfar, Eugene Ayonga, Selenge Tulga, KT Wirth"
-date: "2023-11-14"
+date: "2023-12-14"
 output: 
   pdf_document:
     number_sections: true
@@ -49,7 +49,7 @@ The data set is quite large with nearly 1 million rows of data and 31 different 
 
 ## Column Description
 
-Let us first introduce the different attributes relevant for our study. Relevant column names from the dataset are enclosed in paranethesis after the name of the attribute.
+Let us first introduce the different attributes relevant for our study. Relevant column names from the dataset are enclosed in parenthesis after the name of the attribute.
 
 ### Semi Major Axis (a)
 
@@ -497,6 +497,50 @@ Since the p-value is greater than our confidence level, we fail to reject the nu
 
 This test allows us to see the trade off between distance and value. It proves that we are more likely to get highly valuable asteroids when we don't limit ourselves to near earth asteroids. This is because a greater proportion of asteroids that are not NEO are metallic and these are highly desirable asteroids.
 
+## Asteroid size
+
+An important consideration when mining asteroids is the size of the asteroid. Typically, a large asteroid will have more valuable materials than a smaller asteroid. It is thus important to know where the larger asteroids lie, near or far away from earth. We want to test if the asteroids near earth are smaller than the asteroids far away from earth. So our hypothesis are
+
+* Null Hypothesis: TODO
+
+* Alternative Hypothesis: TODO
+
+We're going to carry out this hypothesis test using a two-sample t-test or Welch Test with $\alpha = 0.0001$.
+
+<!-- Columns: diameter and neo -->
+
+```{r EDA Value-Difference material, echo=TRUE}
+# NEO Material
+```
+
+
+```{r EDA Asteroid_Size visualization, echo=T}
+# TODO: Visualization
+```
+
+<!-- TODO: What can be seen and inferred from the chart -->
+
+<!-- TODO: If transformation needs to be done, explain what transformation and why -->
+
+```{r EDA Asteroid_Size transformation, echo=T}
+# TODO: Transformation (if required)
+```
+
+
+<!-- TODO: Hypothesis test -->
+
+```{r EDA Asteroid_Size two-sample hypothesis test, echo=T}
+# TODO: Hypothesis testing (Two-sample t-test)
+```
+
+<!-- TODO: Reject / fail to reject null hypothesis -->
+
+### Verdict
+
+<!-- TODO: What does this mean for the question we asked? -->
+
+
+
 ## Diameter Difference
 
 There are 4 different types of NEOs based on semi-major axis and aphelion distance: Amors, Apollos, Atens, and Atiras. Amos is the closest to earth's orbit while Atiras is the furthest away. We want to see if the size of the asteroids vary across these 4 types. Meaning, we'd like to do a hypothesis test using ANOVA, where we check if the average diameter of asteroids is different among these 4 types of asteroids. If so, we'd like to know which NEO asteroids are on average larger from pairwise t-tests. Thus our hypothesis is as follows:
@@ -600,44 +644,458 @@ For Atens vs. Apollos and Atiras vs. Apollos, there is no significant difference
 
 Amor's diameter is more bigger than other types and good news is Amors is the closest type from our planet. Also, count of Amor is significantly higher than other types. 
 
+
 ## Value Difference
 
-Among the 4 different types of NEO asteroids, we want to determine which type has most percentage of metallic asteroids. The more metallic asteroid, the better our chance of mining precious materials. For this, we're going to a chisqaure test of independence. We want to find distinctions in proportions among the different asteroid types and then find which one has the highest. Our hypothesis is as follows:
+Among the 4 different types of NEO asteroids, we want to determine which type has most percentage of metallic asteroids. The more metallic asteroid, the better our chance of mining precious materials. For this, we're going to a Chi-Squared test of independence. We want to find distinctions in proportions among the different asteroid types and then find which one has the highest. Our hypothesis is as follows:
 
-* Null Hypothesis: TODO
+* Null Hypothesis (H0):The proportion of metallic asteroids is the same across all types of NEOs.
 
-* Alternative Hypothesis: TODO
+* Alternative Hypothesis (H1): At least one type of NEO has a different proportion of metallic asteroids.
 
 We're going to carry out this hypothesis test with $\alpha = 0.0001$.
 
-<!-- Columns: material and neo_type -->
+Checking the material set in the dataset:
+
+```{r EDA Value_Difference material, echo=T}
+# NEO Material
+df_material <- df$material
+unique(df_material)
+```
+
+Checking the neo_type set in the dataset:
+```{r EDA Value_Difference neo_type, echo=T}
+# NEO Type
+df_neo_type <- df$neo_type
+unique(df_neo_type)
+```
+
+Visualizing the proportion of materials in the four NEOs.
 
 ```{r EDA Value_Difference visualization, echo=T}
-# TODO: Visualization
+
+ggplot(df, aes(x = neo_type, fill = material)) +
+  geom_bar(position = "fill") +
+  labs(title = "Proportion of Metallic Asteroids by Near Earth Object (NEO) Type",
+       x = "Near Earth Object (NEO) Type",
+       y = "Proportion") +
+  scale_fill_manual(values = c("carbonaceous" = "navy", "metallic" = "orangered"))
+
+```
+VISUALIZATION INTERPRETATION
+
+From the chart, it can be seen that the proportion of metallic materials across the four NEOs is different.
+
+As a next step, we can confirm this statistically through a Chi-Squared test of independence.
+
+We then proceed to compute a contingency table
+```{r EDA Value_Difference Contingency Table, echo=T}
+
+# Contingency table
+contingency_table_neotype_material <- table(df$neo_type, df$material)
+
+contingency_table_neotype_material
 ```
 
-<!-- TODO: What can be seen and inferred from the chart -->
+This corresponds to what we visually inferred from the bar chart.
 
-<!-- TODO: If transformation needs to be done, explain what transformation and why -->
+Now, we can then proceed to perform our Chi-Squared Test for Independence
 
-```{r EDA Value_Difference transformation, echo=T}
-# TODO: Transformation (if required)
+```{r EDA Value_Difference Chi-Squared test of independence, echo=T}
+# Perform chi-squared test
+chi_squared_result <- chisq.test(contingency_table_neotype_material, 
+                                 correct = FALSE)
+
+# Print the result
+print(chi_squared_result)
 ```
 
+Comparing the significance value to the p-value:
 
-<!-- TODO: Hypothesis test -->
+COMMENT: Since the p-value is less than alpha, we reject the null hypothesis, H0.
 
-```{r EDA Value_Difference chisqaure test of independence, echo=T}
-# TODO: Hypothesis testing (chisqaure test of independence)
+The proportion of metallic asteroids is not the same across all types of NEOs.
+
+Finding out the metallic proportions in every NEO combination:
+
+There are 4 NEOs, thus: C(4,2) = 4!/(2! * (4 - 2)!) = 6 possible combinations
+
+We do this in the form of a two-sample proportion test, for each possible combination.
+
+## PROPORTIONS HYPOTHESES TESTING
+
+```{r EDA Value_Difference Two-Sample Proportion Test AMORS & APOLLOS, echo=T}
+
+# AMORS & APOLLOS
+
+# H0: Proportion of Metallic Material in Amors == Proportion of Metallic Material in Apollos
+# H1: Proportion of Metallic Material in Amors != Proportion of Metallic Material in Apollos
+
+# Filtering data for Amors and Apollos with metallic compositions
+amors_metallic <- df[df$neo_type == "Amors" & df$material == "metallic", ]
+apollos_metallic <- df[df$neo_type == "Apollos" & df$material == "metallic", ]
+
+# Counting the occurrences of metallic and total compositions for Amors and Apollos
+amors_metallic_count <- nrow(amors_metallic)
+apollos_metallic_count <- nrow(apollos_metallic)
+
+amors_total_count <- nrow(df[df$neo_type == "Amors", ])
+apollos_total_count <- nrow(df[df$neo_type == "Apollos", ])
+
+# Hypothesis test
+amors_apollos_metallic_proportion <- 
+  prop.test(x = c(amors_metallic_count, apollos_metallic_count),
+          n = c(amors_total_count, apollos_total_count),
+          alternative = "two.sided", conf.level = 0.9999,
+          correct = FALSE)
+
+amors_apollos_metallic_proportion
+
+
+significance_level_alpha <- 0.0001
+
+# Comparing the p-value to the significance level
+if (amors_apollos_metallic_proportion$p.value < significance_level_alpha) {
+print(noquote("Reject H0: Metallic material proportion in Amors is not the same with Apollos."))
+} else {
+print(noquote("We fail to reject the H0: Not enough evidence to conclude that the metallic material proportion is statistically different between Amors and Apollos."))
+}
+
+amors_quantity <- max(amors_apollos_metallic_proportion$estimate)
+apollos_quantity <- min(amors_apollos_metallic_proportion$estimate)
+
+if (amors_quantity > apollos_quantity) {
+  print(noquote
+        (paste("COMMENT: Metallic material proportion in Amors is greater than in Apollos, with a proportion of", 
+               amors_quantity)))
+} else {
+  print(noquote
+        (paste("COMMENT: Metallic material proportion in Apollos is greater than in Amors, with a proportion of", 
+               apollos_quantity)))
+}
+
 ```
 
-<!-- TODO: Reject / fail to reject null hypothesis -->
+```{r EDA Value_Difference Two-Sample Proportion Test AMORS & ATENS, echo=T}
 
-<!-- TODO: If reject, then say which has the highest proportion -->
+# AMORS & ATENS
+
+# H0: Proportion of Metallic Material in Amors == Proportion of Metallic Material in Atens
+# H1: Proportion of Metallic Material in Amors != Proportion of Metallic Material in Atens
+
+# Filtering data for Amors and Atens with metallic compositions
+amors_metallic <- df[df$neo_type == "Amors" & df$material == "metallic", ]
+atens_metallic <- df[df$neo_type == "Atens" & df$material == "metallic", ]
+
+# Counting occurrences of metallic and total compositions for Amors and Atens
+amors_metallic_count <- nrow(amors_metallic)
+atens_metallic_count <- nrow(atens_metallic)
+
+amors_total_count <- nrow(df[df$neo_type == "Amors", ])
+atens_total_count <- nrow(df[df$neo_type == "Atens", ])
+
+# Hypothesis test
+amors_atens_metallic_proportion <- 
+  prop.test(x = c(amors_metallic_count, atens_metallic_count),
+          n = c(amors_total_count, atens_total_count),
+          alternative = "two.sided", conf.level = 0.9999,
+          correct = FALSE)
+
+amors_atens_metallic_proportion
+
+significance_level_alpha <- 0.0001
+
+# Comparing the p-value to the significance level
+if (amors_atens_metallic_proportion$p.value < significance_level_alpha) {
+print(noquote("Reject H0: Metallic material proportion in Amors is not the same in Atens."))
+} else {
+print(noquote
+      ("We fail to reject the H0: Not enough evidence to conclude that the metallic material proportion is statistically different between Amors and Atens."))
+}
+
+amors_quantity <- max(amors_atens_metallic_proportion$estimate)
+atens_quantity <- min(amors_atens_metallic_proportion$estimate)
+
+if (amors_quantity > atens_quantity) {
+  print(noquote
+        (paste("COMMENT: Metallic material proportion in Amors is greater than in Atens, with a proportion of", 
+               amors_quantity)))
+} else {
+  print(noquote
+        (paste("COMMENT: Metallic material proportion in Atens is greater than in Amors, with a proportion of", 
+               atens_quantity)))
+}
+
+```
+
+```{r EDA Value_Difference Two-Sample Proportion Test AMORS & ATIRAS, echo=T}
+
+# AMORS & ATIRAS
+
+# H0: Proportion of Metallic Material in Amors == Proportion of Metallic Material in Atiras
+# H1: Proportion of Metallic Material in Amors != Proportion of Metallic Material in Atiras
+
+# Filtering data for Amors and Atiras with metallic compositions
+amors_metallic <- df[df$neo_type == "Amors" & df$material == "metallic", ]
+atiras_metallic <- df[df$neo_type == "Atiras" & df$material == "metallic", ]
+
+# Counting occurrences of metallic and total compositions for Amors and Atiras
+amors_metallic_count <- nrow(amors_metallic)
+atiras_metallic_count <- nrow(atiras_metallic)
+
+amors_total_count <- nrow(df[df$neo_type == "Amors", ])
+atiras_total_count <- nrow(df[df$neo_type == "Atiras", ])
+
+# Hypothesis test
+amors_atiras_metallic_proportion <- 
+  prop.test(x = c(amors_metallic_count, atiras_metallic_count),
+          n = c(amors_total_count, atiras_total_count),
+          alternative = "two.sided", conf.level = 0.9999,
+          correct = FALSE)
+
+amors_atiras_metallic_proportion
+
+significance_level_alpha <- 0.0001
+
+# Comparing the p-value to the significance level
+if (amors_atiras_metallic_proportion$p.value < significance_level_alpha) {
+print(noquote
+      ("Reject H0: Metallic material proportion in Amors is not the same in Atiras."))
+} else {
+print(noquote
+      ("We fail to reject the H0: Not enough evidence to conclude that the metallic material proportion is statistically different between Amors and Atiras."))
+}
+
+amors_quantity <- max(amors_atiras_metallic_proportion$estimate)
+atiras_quantity <- min(amors_atiras_metallic_proportion$estimate)
+
+if (amors_quantity > atiras_quantity) {
+  print(noquote
+        (paste("COMMENT: Metallic material proportion in Amors is greater than in Atiras, with a proportion of", 
+               amors_quantity)))
+} else {
+  print(noquote
+        (paste("COMMENT: Metallic material proportion in Atiras is greater than in Amors, with a proportion of", 
+               atiras_quantity)))
+}
+
+```
+
+```{r EDA Value_Difference Two-Sample Proportion Test APOLLOS & ATENS, echo=T}
+
+# APOLLOS & ATENS
+
+# H0: Proportion of Metallic Material in Apollos == Proportion of Metallic Material in Atens
+# H1: Proportion of Metallic Material in Apollos != Proportion of Metallic Material in Atens
+
+# Filtering data for Apollos and Atens with metallic compositions
+apollos_metallic <- df[df$neo_type == "Apollos" & df$material == "metallic", ]
+atens_metallic <- df[df$neo_type == "Atens" & df$material == "metallic", ]
+
+# Counting occurrences of metallic and total compositions for Apollos and Apollos
+apollos_metallic_count <- nrow(apollos_metallic)
+atens_metallic_count <- nrow(atens_metallic)
+
+apollos_total_count <- nrow(df[df$neo_type == "Apollos", ])
+atens_total_count <- nrow(df[df$neo_type == "Atens", ])
+
+# Hypothesis test
+apollos_atens_metallic_proportion <- 
+  prop.test(x = c(apollos_metallic_count, atens_metallic_count),
+          n = c(apollos_total_count, atens_total_count),
+          alternative = "two.sided", conf.level = 0.9999,
+          correct = FALSE)
+
+apollos_atens_metallic_proportion
+
+significance_level_alpha <- 0.0001
+
+# Comparing the p-value to the significance level
+if (apollos_atens_metallic_proportion$p.value < significance_level_alpha) {
+print(noquote
+      ("Reject H0: Metallic material proportion in Apollos is not the same in Atens."))
+} else {
+print(noquote
+      ("We fail to reject the H0: Not enough evidence to conclude that the metallic material proportion is statistically different between Apollos and Atens."))
+}
+
+apollos_quantity <- max(apollos_atens_metallic_proportion$estimate)
+atens_quantity <- min(apollos_atens_metallic_proportion$estimate)
+
+if (apollos_quantity > atens_quantity) {
+  print(noquote
+        (paste("COMMENT: Metallic material proportion in Apollos is greater than in Atens, with a proportion of", 
+               apollos_quantity)))
+} else {
+  print(noquote
+        (paste("COMMENT: Metallic material proportion in Atens is greater than in Apollos, with a proportion of", 
+               atens_quantity)))
+}
+```
+
+```{r EDA Value_Difference Two-Sample Proportion Test APOLLOS & ATIRAS, echo=T}
+
+# APOLLOS & ATIRAS
+
+# H0: Proportion of Metallic Material in Apollos == Proportion of Metallic Material in Atiras
+# H1: Proportion of Metallic Material in Apollos != Proportion of Metallic Material in Atiras
+
+# Filtering data for Apollos and Atiras with metallic compositions
+apollos_metallic <- df[df$neo_type == "Apollos" & df$material == "metallic", ]
+atiras_metallic <- df[df$neo_type == "Atiras" & df$material == "metallic", ]
+
+# Counting occurrences of metallic and total compositions for Apollos and Atiras
+apollos_metallic_count <- nrow(apollos_metallic)
+atiras_metallic_count <- nrow(atiras_metallic)
+
+apollos_total_count <- nrow(df[df$neo_type == "Apollos", ])
+atiras_total_count <- nrow(df[df$neo_type == "Atiras", ])
+
+# Hypothesis test
+apollos_atiras_metallic_proportion <- 
+  prop.test(x = c(apollos_metallic_count, atiras_metallic_count),
+          n = c(apollos_total_count, atiras_total_count),
+          alternative = "two.sided", conf.level = 0.9999,
+          correct = FALSE)
+
+apollos_atiras_metallic_proportion
+
+significance_level_alpha <- 0.0001
+
+# Comparing the p-value to the significance level
+if (apollos_atiras_metallic_proportion$p.value < significance_level_alpha) {
+print(noquote
+      ("Reject H0: Metallic material proportion in Apollos is not the same in Atiras."))
+} else {
+print(noquote
+      ("We fail to reject the H0: Not enough evidence to conclude that the metallic material proportion is statistically different between Apollos and Atiras."))
+}
+
+apollos_quantity <- max(apollos_atiras_metallic_proportion$estimate)
+atiras_quantity <- min(apollos_atiras_metallic_proportion$estimate)
+
+if (apollos_quantity > atiras_quantity) {
+  print(noquote
+        (paste("COMMENT: Metallic material proportion in Apollos is greater than in Atiras, with a proportion of", 
+               apollos_quantity)))
+} else {
+  print(noquote
+        (paste("COMMENT: Metallic material proportion in Atiras is greater than in Apollos, with a proportion of", 
+               atiras_quantity)))
+}
+```
+
+```{r EDA Value_Difference Two-Sample Proportion Test ATENS & ATIRAS, echo=T}
+
+# ATENS & ATIRAS
+
+# H0: Proportion of Metallic Material in Atens == Proportion of Metallic Material in Atiras
+# H1: Proportion of Metallic Material in Atens != Proportion of Metallic Material in Atiras
+
+# Filtering data for Atens and Atiras with metallic compositions
+atens_metallic <- df[df$neo_type == "Atens" & df$material == "metallic", ]
+atiras_metallic <- df[df$neo_type == "Atiras" & df$material == "metallic", ]
+
+# Counting occurrences of metallic and total compositions for Atens and Atiras
+atens_metallic_count <- nrow(atens_metallic)
+atiras_metallic_count <- nrow(atiras_metallic)
+
+atens_total_count <- nrow(df[df$neo_type == "Atens", ])
+atiras_total_count <- nrow(df[df$neo_type == "Atiras", ])
+
+# Hypothesis test
+atens_atiras_metallic_proportion <- 
+  prop.test(x = c(atens_metallic_count, atiras_metallic_count),
+          n = c(atens_total_count, atiras_total_count),
+          alternative = "two.sided", conf.level = 0.9999,
+          correct = FALSE)
+
+atens_atiras_metallic_proportion
+
+significance_level_alpha <- 0.0001
+
+# Comparing the p-value to the significance level
+if (atens_atiras_metallic_proportion$p.value < significance_level_alpha) {
+print(noquote
+      ("Reject H0: Metallic material proportion in Atens is not the same in Atiras."))
+} else {
+print(noquote
+      ("We fail to reject the H0: Not enough evidence to conclude that the metallic material proportion is statistically different between Atens and Atiras."))
+}
+
+atens_quantity <- min(atens_atiras_metallic_proportion$estimate)
+atiras_quantity <- max(atens_atiras_metallic_proportion$estimate)
+
+if (atens_quantity < atiras_quantity) {
+  print(noquote
+        (paste("COMMENT: Metallic material proportion in Atiras is greater than in Atens, with a proportion of", 
+               atiras_quantity)))
+} else {
+  print(noquote
+        (paste("COMMENT: Metallic material proportion in Atens is greater than in Atiras, with a proportion of", 
+               atens_quantity)))
+}
+
+```
+
+After the above proportion computation between every possible NEO combinations, we can then graph the proportions for a quick visualization and derivation of a logical decision on asteroid mining feasibility in terms of economic feasibility and technical costs.
+
+```{r EDA Value_Difference NEO metallic proportion combinations Visualization, echo=T}
+
+# Graphing metallic material proportions across NEO combinations
+
+proportions_data <- data.frame(
+  Group = rep(c("First NEO", "Second NEO"), each = 6),
+  Combination = 
+    rep(c("Amors-Apollos", "Amors-Atens", "Amors-Atiras", "Apollos-Atens", "Apollos-Atiras", "Atens-Atiras"), 
+        times = 2),
+  Proportion = c(
+    amors_apollos_metallic_proportion$estimate[1], 
+    amors_apollos_metallic_proportion$estimate[2],
+    amors_atens_metallic_proportion$estimate[1], 
+    amors_atens_metallic_proportion$estimate[2],
+    amors_atiras_metallic_proportion$estimate[1], 
+    amors_atiras_metallic_proportion$estimate[2],
+    apollos_atens_metallic_proportion$estimate[1], 
+    apollos_atens_metallic_proportion$estimate[2],
+    apollos_atiras_metallic_proportion$estimate[1], 
+    apollos_atiras_metallic_proportion$estimate[2],
+    atens_atiras_metallic_proportion$estimate[1], 
+    atens_atiras_metallic_proportion$estimate[2]
+  )
+)
+
+# plotting
+ggplot(proportions_data, 
+       aes(x = Combination, y = Proportion, fill = Group)) +
+  geom_bar(stat = "identity", position = "dodge", width = 0.7, color = "black") +
+  labs(
+    title = "Metallic Material Proportion Visualization for Different NEO Combinations",
+       x = "Near Earth Object (NEO) Combinations",
+       y = "Proportion") +
+  scale_fill_manual(values = c("First NEO" = "navy", "Second NEO" = "orangered")) +
+  theme_minimal()
+
+```
+
+COMMENT: Visually, we can see that the Near Earth Object Amors has the highest proportion of metallic materials compared to the other NEOs. This can be also seen in the computed proportion tests above. This is confirmed below from the initially computed contingency table.
+
+```{r EDA Value_Difference NEO metallic proportion, echo=T}
+# Row proportions
+row_proportions <- prop.table(contingency_table_neotype_material, margin = 1)
+
+# NEO with the highest proportion of metallic asteroids
+neo_highest_metallic_proportion <- 
+  rownames(row_proportions)[which.max(row_proportions[, "metallic"])]
+
+# Printing the results
+cat("NEO with the highest proportion of metallic materials is", 
+    neo_highest_metallic_proportion)
+```
 
 ### Verdict
 
-<!-- TODO: What does this mean for the question we asked? -->
+To answer the value difference question, from a material point of view, best NEO to mine is Amors. This is because it is closest to earth as previously computed, and has a higher proportion of metallic materials than the other NEOs. Thus, from an economic and technical point of view, the most feasible decision is to start mining at the NEO Amors.
 
 
 ## Correlation between H and Diameter
