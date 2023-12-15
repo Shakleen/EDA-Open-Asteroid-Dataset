@@ -710,16 +710,16 @@ amors_metallic <- df[df$neo_type == "Amors" & df$material == "metallic", ]
 apollos_metallic <- df[df$neo_type == "Apollos" & df$material == "metallic", ]
 
 # Counting the occurrences of metallic and total compositions for Amors and Apollos
-amors_metallic_count <- nrow(amors_metallic)
-apollos_metallic_count <- nrow(apollos_metallic)
+amors_met_ct <- nrow(amors_metallic)
+apollos_met_ct <- nrow(apollos_metallic)
 
-amors_total_count <- nrow(df[df$neo_type == "Amors", ])
-apollos_total_count <- nrow(df[df$neo_type == "Apollos", ])
+amors_tot_ct <- nrow(df[df$neo_type == "Amors", ])
+apollos_tot_ct <- nrow(df[df$neo_type == "Apollos", ])
 
 # Hypothesis test
 amors_apollos_metallic_proportion <- 
-  prop.test(x = c(amors_metallic_count, apollos_metallic_count),
-          n = c(amors_total_count, apollos_total_count),
+  prop.test(x = c(amors_met_ct, apollos_met_ct),
+          n = c(amors_tot_ct, apollos_tot_ct),
           alternative = "two.sided", conf.level = 0.9999,
           correct = FALSE)
 
@@ -732,7 +732,7 @@ significance_level_alpha <- 0.0001
 if (amors_apollos_metallic_proportion$p.value < significance_level_alpha) {
 print(noquote("Reject H0: Metallic material proportion in Amors is not the same with Apollos."))
 } else {
-print(noquote("We fail to reject the H0: Not enough evidence to conclude that the metallic material proportion is statistically different between Amors and Apollos."))
+print(noquote("We fail to reject the H0: Not enough evidence to conclude statistical difference."))
 }
 
 amors_quantity <- max(amors_apollos_metallic_proportion$estimate)
@@ -740,11 +740,11 @@ apollos_quantity <- min(amors_apollos_metallic_proportion$estimate)
 
 if (amors_quantity > apollos_quantity) {
   print(noquote
-        (paste("COMMENT: Metallic material proportion in Amors is greater than in Apollos, with a proportion of", 
+        (paste("Metallic proportion in Amors > in Apollos, with a proportion of", 
                amors_quantity)))
 } else {
   print(noquote
-        (paste("COMMENT: Metallic material proportion in Apollos is greater than in Amors, with a proportion of", 
+        (paste("Metallic material proportion in Apollos > in Amors, with a proportion of", 
                apollos_quantity)))
 }
 
@@ -784,7 +784,7 @@ if (amors_atens_metallic_proportion$p.value < significance_level_alpha) {
 print(noquote("Reject H0: Metallic material proportion in Amors is not the same in Atens."))
 } else {
 print(noquote
-      ("We fail to reject the H0: Not enough evidence to conclude that the metallic material proportion is statistically different between Amors and Atens."))
+      ("We fail to reject the H0: Not enough evidence of statistical difference."))
 }
 
 amors_quantity <- max(amors_atens_metallic_proportion$estimate)
@@ -792,11 +792,11 @@ atens_quantity <- min(amors_atens_metallic_proportion$estimate)
 
 if (amors_quantity > atens_quantity) {
   print(noquote
-        (paste("COMMENT: Metallic material proportion in Amors is greater than in Atens, with a proportion of", 
+        (paste("Metallic material proportion in Amors > in Atens, with a proportion of", 
                amors_quantity)))
 } else {
   print(noquote
-        (paste("COMMENT: Metallic material proportion in Atens is greater than in Amors, with a proportion of", 
+        (paste("Metallic material proportion in Atens is greater than in Amors, with a proportion of", 
                atens_quantity)))
 }
 
@@ -814,16 +814,16 @@ amors_metallic <- df[df$neo_type == "Amors" & df$material == "metallic", ]
 atiras_metallic <- df[df$neo_type == "Atiras" & df$material == "metallic", ]
 
 # Counting occurrences of metallic and total compositions for Amors and Atiras
-amors_metallic_count <- nrow(amors_metallic)
-atiras_metallic_count <- nrow(atiras_metallic)
+amors_met_ct <- nrow(amors_metallic)
+atiras_met_ct <- nrow(atiras_metallic)
 
-amors_total_count <- nrow(df[df$neo_type == "Amors", ])
-atiras_total_count <- nrow(df[df$neo_type == "Atiras", ])
+amors_tot_ct <- nrow(df[df$neo_type == "Amors", ])
+atiras_tot_ct <- nrow(df[df$neo_type == "Atiras", ])
 
 # Hypothesis test
 amors_atiras_metallic_proportion <- 
-  prop.test(x = c(amors_metallic_count, atiras_metallic_count),
-          n = c(amors_total_count, atiras_total_count),
+  prop.test(x = c(amors_met_ct, atiras_met_ct),
+          n = c(amors_tot_ct, atiras_tot_ct),
           alternative = "two.sided", conf.level = 0.9999,
           correct = FALSE)
 
@@ -834,10 +834,10 @@ significance_level_alpha <- 0.0001
 # Comparing the p-value to the significance level
 if (amors_atiras_metallic_proportion$p.value < significance_level_alpha) {
 print(noquote
-      ("Reject H0: Metallic material proportion in Amors is not the same in Atiras."))
+      ("Reject H0: Metallic material proportion in Amors != in Atiras."))
 } else {
 print(noquote
-      ("We fail to reject the H0: Not enough evidence to conclude that the metallic material proportion is statistically different between Amors and Atiras."))
+      ("We fail to reject the H0: Not enough evidence to conclude statistical difference."))
 }
 
 amors_quantity <- max(amors_atiras_metallic_proportion$estimate)
@@ -845,11 +845,11 @@ atiras_quantity <- min(amors_atiras_metallic_proportion$estimate)
 
 if (amors_quantity > atiras_quantity) {
   print(noquote
-        (paste("COMMENT: Metallic material proportion in Amors is greater than in Atiras, with a proportion of", 
+        (paste("Metallic material proportion in Amors > in Atiras, with a proportion of", 
                amors_quantity)))
 } else {
   print(noquote
-        (paste("COMMENT: Metallic material proportion in Atiras is greater than in Amors, with a proportion of", 
+        (paste("Metallic material proportion in Atiras > in Amors, with a proportion of", 
                atiras_quantity)))
 }
 
@@ -867,16 +867,16 @@ apollos_metallic <- df[df$neo_type == "Apollos" & df$material == "metallic", ]
 atens_metallic <- df[df$neo_type == "Atens" & df$material == "metallic", ]
 
 # Counting occurrences of metallic and total compositions for Apollos and Apollos
-apollos_metallic_count <- nrow(apollos_metallic)
-atens_metallic_count <- nrow(atens_metallic)
+apollos_met_ct <- nrow(apollos_metallic)
+atens_met_ct <- nrow(atens_metallic)
 
-apollos_total_count <- nrow(df[df$neo_type == "Apollos", ])
-atens_total_count <- nrow(df[df$neo_type == "Atens", ])
+apollos_tot_ct <- nrow(df[df$neo_type == "Apollos", ])
+atens_tot_ct <- nrow(df[df$neo_type == "Atens", ])
 
 # Hypothesis test
 apollos_atens_metallic_proportion <- 
-  prop.test(x = c(apollos_metallic_count, atens_metallic_count),
-          n = c(apollos_total_count, atens_total_count),
+  prop.test(x = c(apollos_met_ct, atens_met_ct),
+          n = c(apollos_tot_ct, atens_tot_ct),
           alternative = "two.sided", conf.level = 0.9999,
           correct = FALSE)
 
@@ -890,7 +890,7 @@ print(noquote
       ("Reject H0: Metallic material proportion in Apollos is not the same in Atens."))
 } else {
 print(noquote
-      ("We fail to reject the H0: Not enough evidence to conclude that the metallic material proportion is statistically different between Apollos and Atens."))
+      ("We fail to reject the H0: Not enough evidence to conclude statistical difference."))
 }
 
 apollos_quantity <- max(apollos_atens_metallic_proportion$estimate)
@@ -898,11 +898,11 @@ atens_quantity <- min(apollos_atens_metallic_proportion$estimate)
 
 if (apollos_quantity > atens_quantity) {
   print(noquote
-        (paste("COMMENT: Metallic material proportion in Apollos is greater than in Atens, with a proportion of", 
+        (paste("Metallic material proportion in Apollos > in Atens, with a proportion of", 
                apollos_quantity)))
 } else {
   print(noquote
-        (paste("COMMENT: Metallic material proportion in Atens is greater than in Apollos, with a proportion of", 
+        (paste("Metallic material proportion in Atens > in Apollos, with a proportion of", 
                atens_quantity)))
 }
 ```
@@ -919,16 +919,16 @@ apollos_metallic <- df[df$neo_type == "Apollos" & df$material == "metallic", ]
 atiras_metallic <- df[df$neo_type == "Atiras" & df$material == "metallic", ]
 
 # Counting occurrences of metallic and total compositions for Apollos and Atiras
-apollos_metallic_count <- nrow(apollos_metallic)
-atiras_metallic_count <- nrow(atiras_metallic)
+apollos_met_ct <- nrow(apollos_metallic)
+atiras_met_ct <- nrow(atiras_metallic)
 
-apollos_total_count <- nrow(df[df$neo_type == "Apollos", ])
-atiras_total_count <- nrow(df[df$neo_type == "Atiras", ])
+apollos_tot_ct <- nrow(df[df$neo_type == "Apollos", ])
+atiras_tot_ct <- nrow(df[df$neo_type == "Atiras", ])
 
 # Hypothesis test
 apollos_atiras_metallic_proportion <- 
-  prop.test(x = c(apollos_metallic_count, atiras_metallic_count),
-          n = c(apollos_total_count, atiras_total_count),
+  prop.test(x = c(apollos_met_ct, atiras_met_ct),
+          n = c(apollos_tot_ct, atiras_tot_ct),
           alternative = "two.sided", conf.level = 0.9999,
           correct = FALSE)
 
@@ -942,7 +942,7 @@ print(noquote
       ("Reject H0: Metallic material proportion in Apollos is not the same in Atiras."))
 } else {
 print(noquote
-      ("We fail to reject the H0: Not enough evidence to conclude that the metallic material proportion is statistically different between Apollos and Atiras."))
+      ("We fail to reject the H0: Not enough evidence to conclude statistical difference."))
 }
 
 apollos_quantity <- max(apollos_atiras_metallic_proportion$estimate)
@@ -950,11 +950,11 @@ atiras_quantity <- min(apollos_atiras_metallic_proportion$estimate)
 
 if (apollos_quantity > atiras_quantity) {
   print(noquote
-        (paste("COMMENT: Metallic material proportion in Apollos is greater than in Atiras, with a proportion of", 
+        (paste("Metallic material proportion in Apollos > in Atiras, with a proportion of", 
                apollos_quantity)))
 } else {
   print(noquote
-        (paste("COMMENT: Metallic material proportion in Atiras is greater than in Apollos, with a proportion of", 
+        (paste("Metallic material proportion in Atiras > in Apollos, with a proportion of", 
                atiras_quantity)))
 }
 ```
@@ -971,16 +971,16 @@ atens_metallic <- df[df$neo_type == "Atens" & df$material == "metallic", ]
 atiras_metallic <- df[df$neo_type == "Atiras" & df$material == "metallic", ]
 
 # Counting occurrences of metallic and total compositions for Atens and Atiras
-atens_metallic_count <- nrow(atens_metallic)
-atiras_metallic_count <- nrow(atiras_metallic)
+atens_met_ct <- nrow(atens_metallic)
+atiras_met_ct <- nrow(atiras_metallic)
 
-atens_total_count <- nrow(df[df$neo_type == "Atens", ])
-atiras_total_count <- nrow(df[df$neo_type == "Atiras", ])
+atens_tot_ct <- nrow(df[df$neo_type == "Atens", ])
+atiras_tot_ct <- nrow(df[df$neo_type == "Atiras", ])
 
 # Hypothesis test
 atens_atiras_metallic_proportion <- 
-  prop.test(x = c(atens_metallic_count, atiras_metallic_count),
-          n = c(atens_total_count, atiras_total_count),
+  prop.test(x = c(atens_met_ct, atiras_met_ct),
+          n = c(atens_tot_ct, atiras_tot_ct),
           alternative = "two.sided", conf.level = 0.9999,
           correct = FALSE)
 
@@ -994,7 +994,7 @@ print(noquote
       ("Reject H0: Metallic material proportion in Atens is not the same in Atiras."))
 } else {
 print(noquote
-      ("We fail to reject the H0: Not enough evidence to conclude that the metallic material proportion is statistically different between Atens and Atiras."))
+      ("We fail to reject the H0: Not enough evidence to conclude statistical difference."))
 }
 
 atens_quantity <- min(atens_atiras_metallic_proportion$estimate)
@@ -1002,11 +1002,11 @@ atiras_quantity <- max(atens_atiras_metallic_proportion$estimate)
 
 if (atens_quantity < atiras_quantity) {
   print(noquote
-        (paste("COMMENT: Metallic material proportion in Atiras is greater than in Atens, with a proportion of", 
+        (paste("Metallic material proportion in Atiras > in Atens, with a proportion of", 
                atiras_quantity)))
 } else {
   print(noquote
-        (paste("COMMENT: Metallic material proportion in Atens is greater than in Atiras, with a proportion of", 
+        (paste("Metallic material proportion in Atens > in Atiras, with a proportion of", 
                atens_quantity)))
 }
 
@@ -1017,11 +1017,15 @@ After the above proportion computation between every possible NEO combinations, 
 ```{r EDA Value_Difference NEO metallic proportion combinations Visualization, echo=T}
 
 # Graphing metallic material proportions across NEO combinations
-
 proportions_data <- data.frame(
   Group = rep(c("First NEO", "Second NEO"), each = 6),
   Combination = 
-    rep(c("Amors-Apollos", "Amors-Atens", "Amors-Atiras", "Apollos-Atens", "Apollos-Atiras", "Atens-Atiras"), 
+    rep(c("Amors-Apollos", 
+          "Amors-Atens", 
+          "Amors-Atiras", 
+          "Apollos-Atens", 
+          "Apollos-Atiras", 
+          "Atens-Atiras"), 
         times = 2),
   Proportion = c(
     amors_apollos_metallic_proportion$estimate[1], 
