@@ -678,7 +678,7 @@ There are 4 NEOs, thus: C(4,2) = 4!/(2! * (4 - 2)!) = 6 possible combinations
 
 We do this in the form of a two-sample proportion test, for each possible combination.
 
-## PROPORTIONS HYPOTHESES TESTING
+### PROPORTIONS HYPOTHESES TESTING
 
 ```{r EDA Value_Difference Two-Sample Proportion Test AMORS & APOLLOS, echo=T}
 
